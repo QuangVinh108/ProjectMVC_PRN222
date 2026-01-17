@@ -1,9 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
-namespace BusinessObjects;
+namespace DAL.Entities;
 
 public partial class ShopDbContext : DbContext
 {
@@ -32,6 +31,8 @@ public partial class ShopDbContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
+
     public virtual DbSet<Review> Reviews { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -44,21 +45,13 @@ public partial class ShopDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer(GetConnectionString());
-
-    private string GetConnectionString()
-    {
-        IConfiguration configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", true, true).Build();
-        return configuration["ConnectionStrings:DefaultConnectionString"];
-    }
+        => optionsBuilder.UseSqlServer("server=(local);database=ShopDB;uid=sa;pwd=12345;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Cart>(entity =>
         {
-            entity.HasKey(e => e.CartId).HasName("PK__Cart__51BCD7B77DC7182F");
+            entity.HasKey(e => e.CartId).HasName("PK__Cart__51BCD7B709AAEFCB");
 
             entity.ToTable("Cart");
 
@@ -72,7 +65,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<CartItem>(entity =>
         {
-            entity.HasKey(e => e.CartItemId).HasName("PK__CartItem__488B0B0A35D0D9B4");
+            entity.HasKey(e => e.CartItemId).HasName("PK__CartItem__488B0B0A3C8181B3");
 
             entity.ToTable("CartItem");
 
@@ -92,7 +85,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A0B9E3872F7");
+            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A0B9D5D2683");
 
             entity.Property(e => e.CategoryName).HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(255);
@@ -104,7 +97,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Inventory>(entity =>
         {
-            entity.HasKey(e => e.InventoryId).HasName("PK__Inventor__F5FDE6B333E14545");
+            entity.HasKey(e => e.InventoryId).HasName("PK__Inventor__F5FDE6B3A48B8287");
 
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.Warehouse).HasMaxLength(100);
@@ -117,7 +110,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Order>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__Orders__C3905BCF1921EBAA");
+            entity.HasKey(e => e.OrderId).HasName("PK__Orders__C3905BCFDBBB5371");
 
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.OrderDate).HasDefaultValueSql("(sysdatetime())");
@@ -132,7 +125,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<OrderItem>(entity =>
         {
-            entity.HasKey(e => e.OrderItemId).HasName("PK__OrderIte__57ED0681A3E3B934");
+            entity.HasKey(e => e.OrderItemId).HasName("PK__OrderIte__57ED0681E0F1D2D0");
 
             entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
 
@@ -149,7 +142,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A3897D51B81");
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A38CDF0DB83");
 
             entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.PaymentMethod).HasMaxLength(50);
@@ -163,9 +156,9 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__Products__B40CC6CD0960784F");
+            entity.HasKey(e => e.ProductId).HasName("PK__Products__B40CC6CD893E5284");
 
-            entity.HasIndex(e => e.Sku, "UQ__Products__CA1ECF0D49BFF739").IsUnique();
+            entity.HasIndex(e => e.Sku, "UQ__Products__CA1ECF0D8E6B85E4").IsUnique();
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
@@ -181,9 +174,23 @@ public partial class ShopDbContext : DbContext
                 .HasConstraintName("FK_Products_Categories");
         });
 
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.RefreshTokenId).HasName("PK__RefreshT__F5845E39B431EACA");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.ReplacedByToken).HasMaxLength(255);
+            entity.Property(e => e.Token).HasMaxLength(255);
+
+            entity.HasOne(d => d.User).WithMany(p => p.RefreshTokens)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RefreshTokens_Users");
+        });
+
         modelBuilder.Entity<Review>(entity =>
         {
-            entity.HasKey(e => e.ReviewId).HasName("PK__Reviews__74BC79CE6D5F15BF");
+            entity.HasKey(e => e.ReviewId).HasName("PK__Reviews__74BC79CEE7C3112D");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
 
@@ -200,7 +207,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE1AFB64E21D");
+            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE1A2602CB91");
 
             entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.RoleName).HasMaxLength(50);
@@ -208,7 +215,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Shipping>(entity =>
         {
-            entity.HasKey(e => e.ShippingId).HasName("PK__Shipping__5FACD58081C8C9E3");
+            entity.HasKey(e => e.ShippingId).HasName("PK__Shipping__5FACD5804185BAB6");
 
             entity.ToTable("Shipping");
 
@@ -227,11 +234,11 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4C3FB56980");
+            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4CA35A0A32");
 
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D10534E4680616").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Users__A9D10534C3C028DC").IsUnique();
 
-            entity.HasIndex(e => e.UserName, "UQ__Users__C9F28456B10B5D36").IsUnique();
+            entity.HasIndex(e => e.UserName, "UQ__Users__C9F284564484BC29").IsUnique();
 
             entity.Property(e => e.Address).HasMaxLength(255);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
@@ -250,7 +257,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Wishlist>(entity =>
         {
-            entity.HasKey(e => e.WishlistId).HasName("PK__Wishlist__233189EBE2278E08");
+            entity.HasKey(e => e.WishlistId).HasName("PK__Wishlist__233189EB290876E1");
 
             entity.ToTable("Wishlist");
 

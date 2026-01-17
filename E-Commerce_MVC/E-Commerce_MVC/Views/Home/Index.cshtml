@@ -1,8 +1,109 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "E-Commerce - Mua sắm online";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!-- Hero Section -->
+<section class="hero-section bg-primary text-white py-5 mb-5">
+    <div class="container-fluid px-4 px-lg-5">
+         <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    Chào mừng đến <span class="text-warning">E-Shop</span>
+                </h1>
+                <p class="lead mb-4">
+                    Khám phá <strong>hàng ngàn sản phẩm</strong> chất lượng cao với
+                    <strong>giá tốt nhất</strong> và <strong>ship COD toàn quốc</strong>.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a asp-controller="Product" asp-action="Index"
+                       class="btn btn-warning btn-lg px-5 py-2 fw-bold">
+                        🛒 Mua sắm ngay
+                    </a>
+                    <a asp-controller="Product" asp-action="Index"
+                       class="btn btn-outline-light btn-lg px-5 py-2">
+                        Xem sản phẩm
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=500&h=400&fit=crop"
+                     alt="Shopping" class="img-fluid rounded shadow-lg" style="max-height: 400px;">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="py-5 bg-light">
+    <div class="container-fluid px-4">
+        <div class="row g-4 justify-content-center" id="featuredProducts">
+            <h2 class="display-6 fw-bold mb-3">🔥 Sản phẩm nổi bật</h2>
+            <p class="lead text-muted">Cập nhật mới nhất - Giá sốc hôm nay!</p>
+        </div>
+        <div class="row g-4" id="featuredProducts">
+            <!-- Sản phẩm load AJAX sau -->
+            <div class="col-md-3">
+                <div class="card h-100 shadow-sm hover-shadow">
+                    <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=250&fit=crop"
+                         class="card-img-top" alt="iPhone">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">iPhone 15 Pro</h5>
+                        <p class="text-muted">Electronics</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="text-danger fw-bold mb-0">25.000.000<sup>đ</sup></h4>
+                            <span class="badge bg-success">Hot</span>
+                        </div>
+                        <a asp-controller="Product" asp-action="Detail" asp-route-id="1"
+                           class="btn btn-primary w-100 mt-auto">Xem chi tiết</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 shadow-sm hover-shadow">
+                    <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&h=250&fit=crop"
+                         class="card-img-top" alt="Laptop">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">MacBook Air M2</h5>
+                        <p class="text-muted">Electronics</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="text-danger fw-bold mb-0">28.000.000<sup>đ</sup></h4>
+                            <span class="badge bg-warning">-10%</span>
+                        </div>
+                        <a asp-controller="Product" asp-action="Detail" asp-route-id="2"
+                           class="btn btn-primary w-100 mt-auto">Xem chi tiết</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Thêm 4 sản phẩm nữa... -->
+        </div>
+        <div class="text-center mt-5">
+            <a asp-controller="Product" asp-action="Index"
+               class="btn btn-outline-primary btn-lg px-5 py-3">
+                Xem tất cả sản phẩm <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 bg-dark text-white">
+    <div class="container text-center">
+        <h2 class="display-6 mb-4">🚚 Giao hàng miễn phí toàn quốc</h2>
+        <p class="lead mb-4">Đơn từ 500k - COD - Hoàn tiền 100%</p>
+        <a asp-controller="Product" asp-action="Index"
+           class="btn btn-warning btn-lg px-5 py-3 fw-bold">
+            Bắt đầu mua sắm
+        </a>
+    </div>
+</section>
+
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+        transition: all 0.3s ease;
+    }
+</style>

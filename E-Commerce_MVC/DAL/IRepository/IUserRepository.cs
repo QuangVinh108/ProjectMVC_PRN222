@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DAL.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,5 +9,7 @@ namespace Repositories.IRepository
 {
     public interface IUserRepository
     {
+        User? GetByUserName(string username);
+        Task<User?> AuthenticateAsync(string username, string password);
     }
 }

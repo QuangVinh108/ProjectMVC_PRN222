@@ -1,0 +1,92 @@
+﻿@model LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Hero Background full screen -->
+<style>
+    .login-hero {
+        min-height: 100vh;
+        background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1920&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        display: flex;
+        align-items: center;
+    }
+
+    .login-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        border: none;
+    }
+
+    .form-floating label {
+        color: #666;
+    }
+</style>
+
+<div class="login-hero">
+    <div class="container-fluid px-4 px-lg-5"> ← Fluid + padding đẹp
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-7">
+                <div class="login-card p-5">
+                    <div class="text-center mb-5">
+                        <h1 class="display-5 fw-bold text-primary mb-2">
+                            <i class="bi bi-shield-lock"></i> Đăng nhập
+                        </h1>
+                        <p class="text-muted">Vào tài khoản của bạn để tiếp tục mua sắm</p>
+                    </div>
+
+                    <form asp-action="Login" method="post">
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+                        <div class="form-floating mb-4">
+                            <input asp-for="Username" class="form-control" id="username" placeholder="admin" />
+                            <label for="username">
+                                <i class="bi bi-person me-2"></i> @Html.DisplayNameFor(m => m.Username)
+                            </label>
+                            <span asp-validation-for="Username" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <input asp-for="Password" class="form-control" type="password" id="password" placeholder="password" />
+                            <label for="password">
+                                <i class="bi bi-lock me-2"></i> @Html.DisplayNameFor(m => m.Password)
+                            </label>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember">
+                                <label class="form-check-label" for="remember">
+                                    Ghi nhớ đăng nhập
+                                </label>
+                            </div>
+                            <a href="#" class="text-primary text-decoration-none">Quên mật khẩu?</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-5 mb-3">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Đăng nhập
+                        </button>
+
+                        <div class="text-center">
+                            <p class="mb-0 text-muted">Demo: <strong>admin</strong> / <strong>password</strong></p>
+                            <p class="text-muted">Chưa có tài khoản? <a asp-action="Register" class="text-primary fw-bold">Đăng ký ngay</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
