@@ -1,0 +1,34 @@
+﻿@model DAL.Entities.Cart
+
+<h1>🛒 Giỏ hàng</h1>
+
+@if (Model == null)
+{
+    <p style="color:red;">Cart = null (chưa tạo cart cho user)</p>
+}
+else if (!Model.CartItems.Any())
+{
+    <p>Giỏ hàng trống</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Sản phẩm</th>
+                <th>Giá</th>
+                <th>Số lượng</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.CartItems)
+            {
+                <tr>
+                    <td>@item.Product.ProductName</td>
+                    <td>@item.UnitPrice</td>
+                    <td>@item.Quantity</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
