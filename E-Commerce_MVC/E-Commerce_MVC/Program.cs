@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Repositories.IRepository;
-using Repositories.Repository;
 using Services.IService;
 using Services.Service;
 using System.Text;
@@ -25,23 +23,17 @@ builder.Services.AddDbContext<ShopDbContext>(options =>
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-<<<<<<< HEAD
 builder.Services.AddScoped<IWishlistRepository, WishlistRepository>();
-=======
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
->>>>>>> develop
 
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-<<<<<<< HEAD
 builder.Services.AddScoped<IWishlistService, WishlistService>();
-=======
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<ICartService, CartService>();
->>>>>>> develop
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>

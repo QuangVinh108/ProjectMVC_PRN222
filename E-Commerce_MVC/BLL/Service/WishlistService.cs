@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DAL.Entities;
+using DAL.IRepository;
 using Microsoft.EntityFrameworkCore;
-using Repositories.IRepository;
 using Services.IService;
 
 namespace Services.Service

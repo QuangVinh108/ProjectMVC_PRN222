@@ -7,7 +7,8 @@ GO
 CREATE TABLE Roles (
     RoleId      INT IDENTITY PRIMARY KEY,
     RoleName    NVARCHAR(50) NOT NULL,
-    Description NVARCHAR(255)
+    Description NVARCHAR(255),
+    IsActive    BIT NOT NULL DEFAULT 1
 );
 
 -- USERS
@@ -16,13 +17,28 @@ CREATE TABLE Users (
     RoleId        INT NOT NULL,
     UserName      NVARCHAR(50) NOT NULL UNIQUE,
     Email         NVARCHAR(100) NOT NULL UNIQUE,
-    PasswordHash  NVARCHAR(255) NOT NULL,
+    PasswordHash  NVARCHAR(255) NULL,
     FullName      NVARCHAR(100),
     Phone         NVARCHAR(20),
     Address       NVARCHAR(255),  
     CreatedAt     DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     IsActive      BIT NOT NULL DEFAULT 1,
+    GoogleId NVARCHAR(255) NULL,
+    EmailConfirmed BIT NOT NULL DEFAULT 0,
+    EmailConfirmedAt DATETIME2 NULL,
+    LoginProvider NVARCHAR(50) NULL DEFAULT 'Local',
     CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleId) REFERENCES Roles(RoleId)
+);
+
+CREATE TABLE EmailVerificationTokens (
+    TokenId       INT IDENTITY PRIMARY KEY,
+    UserId        INT NOT NULL,
+    Token         NVARCHAR(255) NOT NULL,
+    Email         NVARCHAR(100) NOT NULL, -- Email đang chờ verify
+    ExpiresAt     DATETIME2 NOT NULL,
+    CreatedAt     DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    IsUsed        BIT NOT NULL DEFAULT 0,
+    CONSTRAINT FK_EmailVerificationTokens_Users FOREIGN KEY (UserId) REFERENCES Users(UserId)
 );
 
 -- CATEGORIES
@@ -31,6 +47,7 @@ CREATE TABLE Categories (
     CategoryName NVARCHAR(100) NOT NULL,
     ParentId     INT NULL,
     Description  NVARCHAR(255),
+    IsActive     BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Categories_Parent FOREIGN KEY (ParentId) REFERENCES Categories(CategoryId)
 );
 
@@ -45,13 +62,14 @@ CREATE TABLE Products (
     Status        TINYINT NOT NULL DEFAULT 1,   -- 1: Active
     CreatedAt     DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     UpdatedAt     DATETIME2 NULL,
+    IsActive      BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Products_Categories FOREIGN KEY (CategoryId) REFERENCES Categories(CategoryId)
 );
 
 -- INVENTORIES
 CREATE TABLE Inventories (
     InventoryId INT IDENTITY PRIMARY KEY,
-    ProductId   INT NOT NULL,
+    ProductId   INT NOT NULL UNIQUE,
     Quantity    INT NOT NULL DEFAULT 0,
     Warehouse   NVARCHAR(100),
     UpdatedAt   DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
@@ -61,9 +79,10 @@ CREATE TABLE Inventories (
 -- CART
 CREATE TABLE Cart (
     CartId     INT IDENTITY PRIMARY KEY,
-    UserId     INT NOT NULL,
+    UserId     INT NOT NULL UNIQUE,
     CreatedAt  DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     UpdatedAt  DATETIME2 NULL,
+    IsActive   BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Cart_Users FOREIGN KEY (UserId) REFERENCES Users(UserId)
 );
 
@@ -74,6 +93,7 @@ CREATE TABLE CartItem (
     ProductId  INT NOT NULL,
     Quantity   INT NOT NULL DEFAULT 1,
     UnitPrice  DECIMAL(18,2) NOT NULL,
+    Image  NVARCHAR(500)  NULL,
     CONSTRAINT FK_CartItem_Cart FOREIGN KEY (CartId) REFERENCES Cart(CartId),
     CONSTRAINT FK_CartItem_Products FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
 );
@@ -86,6 +106,7 @@ CREATE TABLE Orders (
     Status       NVARCHAR(30) NOT NULL,          -- Pending, Paid, Shipped, ...
     TotalAmount  DECIMAL(18,2) NOT NULL DEFAULT 0,
     Note         NVARCHAR(255),
+    IsActive     BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Orders_Users FOREIGN KEY (UserId) REFERENCES Users(UserId)
 );
 
@@ -96,6 +117,7 @@ CREATE TABLE OrderItems (
     ProductId   INT NOT NULL,
     Quantity    INT NOT NULL,
     UnitPrice   DECIMAL(18,2) NOT NULL,
+    Image   NVARCHAR(500) NULL,
     CONSTRAINT FK_OrderItems_Orders FOREIGN KEY (OrderId) REFERENCES Orders(OrderId),
     CONSTRAINT FK_OrderItems_Products FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
 );
@@ -103,7 +125,7 @@ CREATE TABLE OrderItems (
 -- PAYMENTS
 CREATE TABLE Payments (
     PaymentId     INT IDENTITY PRIMARY KEY,
-    OrderId       INT NOT NULL,
+    OrderId       INT NOT NULL UNIQUE,
     PaymentMethod NVARCHAR(50) NOT NULL,  -- COD, CreditCard, ...
     Amount        DECIMAL(18,2) NOT NULL,
     PaidAt        DATETIME2 NULL,
@@ -114,7 +136,7 @@ CREATE TABLE Payments (
 -- SHIPPING
 CREATE TABLE Shipping (
     ShippingId    INT IDENTITY PRIMARY KEY,
-    OrderId       INT NOT NULL,
+    OrderId       INT NOT NULL UNIQUE,
     Address       NVARCHAR(255) NOT NULL,
     City          NVARCHAR(100),
     Country       NVARCHAR(100),
@@ -126,15 +148,30 @@ CREATE TABLE Shipping (
     CONSTRAINT FK_Shipping_Orders FOREIGN KEY (OrderId) REFERENCES Orders(OrderId)
 );
 
+
+
 -- WISHLIST
 CREATE TABLE Wishlist (
     WishlistId INT IDENTITY PRIMARY KEY,
-    UserId     INT NOT NULL,
-    ProductId  INT NOT NULL,
+    UserId     INT NOT NULL UNIQUE,
     CreatedAt  DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_Wishlist_Users FOREIGN KEY (UserId) REFERENCES Users(UserId),
-    CONSTRAINT FK_Wishlist_Products FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
+    CONSTRAINT FK_Wishlist_Users FOREIGN KEY (UserId) REFERENCES Users(UserId)
 );
+
+CREATE TABLE WishlistProduct (
+    WishlistProductId INT IDENTITY PRIMARY KEY,
+    WishlistId        INT NOT NULL,
+    ProductId         INT NOT NULL,
+    AddedAt           DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    Note              NVARCHAR(255) NULL,
+    Image   NVARCHAR(500) NULL,
+    CONSTRAINT FK_WishlistProduct_Wishlist FOREIGN KEY (WishlistId) REFERENCES Wishlist(WishlistId),
+    CONSTRAINT FK_WishlistProduct_Product FOREIGN KEY (ProductId) REFERENCES Products(ProductId),
+    CONSTRAINT UQ_WishlistProduct UNIQUE (WishlistId, ProductId),
+  
+);
+
+
 
 -- REVIEWS
 CREATE TABLE Reviews (
@@ -144,6 +181,7 @@ CREATE TABLE Reviews (
     Rating     INT NOT NULL,             -- 1-5
     Comment    NVARCHAR(MAX),
     CreatedAt  DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    IsActive   BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Reviews_Users FOREIGN KEY (UserId) REFERENCES Users(UserId),
     CONSTRAINT FK_Reviews_Products FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
 );

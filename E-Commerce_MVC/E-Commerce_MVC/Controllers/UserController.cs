@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Repositories.IRepository;
 using Services.IService;
 
 namespace E_Commerce_MVC.Controllers
@@ -13,12 +12,14 @@ namespace E_Commerce_MVC.Controllers
     {
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
+        private readonly IWishlistService _wishlistService;
 
         // Constructor Inject Service
-        public UserController(IUserService userService, IRoleService roleService)
+        public UserController(IUserService userService, IRoleService roleService, IWishlistService wishlistService)
         {
             _userService = userService;
             _roleService = roleService;
+            _wishlistService = wishlistService;
         }
 
         public IActionResult Index()
@@ -71,6 +72,31 @@ namespace E_Commerce_MVC.Controllers
 
             return View(model);
         }
+
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Create(CreateUserViewModel model)
+        //{
+        //    if (ModelState.IsValid)
+        //    {
+        //        try
+        //        {
+        //            await _userService.CreateUserAsync(model);
+        //            var user = _userService.GetUserByUserName(model.UserName);
+        //            await _wishlistService.CreateWishlistAsync(user.UserId);
+        //            TempData["SuccessMessage"] = $"Tạo user **{model.UserName}** thành công! Đã tạo Wishlist.";
+        //            return RedirectToAction("Index");
+        //        }
+        //        catch(Exception ex)
+        //        {
+        //            ModelState.AddModelError("", $"Lỗi: {ex.Message}");
+        //        }
+        //    }
+
+        //    var roles = _roleService.GetAllRoles();
+        //    ViewBag.Roles = new SelectList(roles, "RoleId", "RoleName", model.RoleId);
+        //    return View(model);
+        //}
 
         // 1. GET: Hiển thị form sửa
         [HttpGet]

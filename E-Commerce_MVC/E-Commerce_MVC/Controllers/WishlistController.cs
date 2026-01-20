@@ -5,6 +5,8 @@ using Services.IService;
 
 namespace E_Commerce_MVC.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     [Authorize]
     public class WishlistController : Controller
     {
@@ -26,7 +28,7 @@ namespace E_Commerce_MVC.Controllers
             return HttpContext.Session.GetInt32("UserId") ?? 0;
         }
 
-        [HttpGet]
+        [HttpGet("count")]
         public async Task<IActionResult> Count()
         {
             try
@@ -44,18 +46,23 @@ namespace E_Commerce_MVC.Controllers
         }
 
 
-        //GET: /Whishlist/Index - Show list of wishlist items
+        //GET: /Whishlist/Index - Show wishlist items
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             var userId = GetCurrentUserId();
             if(userId == 0)
                 return RedirectToAction("Login", "Account");
 
-            var wishlists = await _wishlistService.GetWishlistByUserAsync(userId);
+            var wishlist = await _wishlistService.GetWishlistByUserAsync(userId);
+            var wishlists = wishlist != null
+        ? new List<Wishlist> { wishlist }
+        : new List<Wishlist>();
             return View(wishlists);
         }
 
         //GET: /Wishlist/Details/5 - Show details of a specific wishlist item
+        [HttpGet("{id}")]
         public async Task<IActionResult> Details(int? id)
         {
             if(id == null)
@@ -80,6 +87,7 @@ namespace E_Commerce_MVC.Controllers
 
 
         //GET: /Wishlist/Create - Show form to create a new wishlist item
+        [HttpGet("create")]
         public IActionResult Create()
         {
             var userId = GetCurrentUserId();
@@ -91,7 +99,7 @@ namespace E_Commerce_MVC.Controllers
         }
 
         //POST: /Wishlist/Create - Handle form submission to create a new wishlist item
-        [HttpPost]
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Wishlist wishlist)
         {
@@ -103,6 +111,7 @@ namespace E_Commerce_MVC.Controllers
         }
 
         //GET: /Wishlist/Edit/5 - Show form to edit an existing wishlist item
+        [HttpGet("edit/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
             if(id == null)
@@ -124,7 +133,7 @@ namespace E_Commerce_MVC.Controllers
         }
 
         //POST: /Wishlist/Edit/5 - Handle form submission to update an existing wishlist item
-        [HttpPost]
+        [HttpPost("Edit")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Wishlist wishlist)
         {
@@ -155,6 +164,7 @@ namespace E_Commerce_MVC.Controllers
         }
 
         //GET: /Wishlist/Delete/5 - Show confirmation page to delete a wishlist item
+        [HttpGet("delete/{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -197,6 +207,16 @@ namespace E_Commerce_MVC.Controllers
             await _wishlistService.DeleteWishlistAsync(id);
             return RedirectToAction(nameof(Index));
         }
+
+        //[HttpPost("add/{productId}")]  // ← 5. Thêm API này
+        //public async Task<IActionResult> AddProduct(int productId)
+        //{
+        //    var userId = GetCurrentUserId();
+        //    if (userId == 0) return Unauthorized();
+
+        //    await _wishlistService.AddProductAsync(userId, productId);
+        //    return Ok(new { message = "Added to wishlist" });
+        //}
 
 
     }

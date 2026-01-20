@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DAL.Entities;
+using DAL.IRepository;
 using Microsoft.EntityFrameworkCore;
-using Repositories.IRepository;
 
-namespace Repositories.Repository
+namespace DAL.Repository
 {
     public class WishlistRepository : IWishlistRepository
     {
@@ -53,12 +53,12 @@ namespace Repositories.Repository
             return await _context.Wishlists.CountAsync(w => w.UserId == userId);
         }
 
-        public async Task<Wishlist> GetWishlistByUserAsync(int userId)
+        public async Task<Wishlist?> GetWishlistByUserAsync(int userId)
         {
             return await _context.Wishlists
-                .Include(w => w.Product)
-                .FirstOrDefaultAsync(w => w.UserId == userId)
-                ;
+                .Include(w => w.WishlistProducts)!
+                    .ThenInclude(wp => wp.Product)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
         }
     }
 }

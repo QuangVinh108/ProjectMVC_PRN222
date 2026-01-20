@@ -1,12 +1,12 @@
 ﻿using DAL.Entities;
-using Repositories.IRepository;
+using DAL.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Repositories.Repository
+namespace DAL.Repository
 {
     public class RoleRepository : IRoleRepository
     {

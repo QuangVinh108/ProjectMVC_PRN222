@@ -13,7 +13,7 @@ public partial class User
 
     public string Email { get; set; } = null!;
 
-    public string PasswordHash { get; set; } = null!;
+    public string? PasswordHash { get; set; }
 
     public string? FullName { get; set; }
 
@@ -25,7 +25,17 @@ public partial class User
 
     public bool IsActive { get; set; }
 
-    public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();
+    public string? GoogleId { get; set; }
+
+    public bool EmailConfirmed { get; set; }
+
+    public DateTime? EmailConfirmedAt { get; set; }
+
+    public string? LoginProvider { get; set; }
+
+    public virtual Cart? Cart { get; set; }
+
+    public virtual ICollection<EmailVerificationToken> EmailVerificationTokens { get; set; } = new List<EmailVerificationToken>();
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
@@ -35,5 +45,5 @@ public partial class User
 
     public virtual Role Role { get; set; } = null!;
 
-    public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
+    public virtual Wishlist? Wishlist { get; set; }
 }

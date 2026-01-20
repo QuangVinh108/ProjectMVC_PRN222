@@ -1,6 +1,7 @@
 ﻿using BLL.DTOs;
 using DAL.Entities;
-using Repositories.IRepository;
+using DAL.IRepository;
+using Microsoft.EntityFrameworkCore;
 using Services.IService;
 using System;
 using System.Collections.Generic;
@@ -83,6 +84,30 @@ namespace Services.Service
 
             // 3. Gọi Repo để lưu
             _userRepository.UpdateUser(user);
+        }
+
+        public async Task CreateUserAsync(CreateUserViewModel model)
+        {
+            var newUser = new User
+            {
+                UserName = model.UserName,
+                Email = model.Email,
+                //PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+                PasswordHash = model.Password,
+                FullName = model.FullName,
+                Phone = model.Phone,
+                Address = model.Address,
+                RoleId = model.RoleId,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userRepository.AddUserAsync(newUser);
+        }
+
+        public async Task<User> GetUserByUserName(string username)
+        {
+            return await _userRepository.GetUserByUserName(username);
         }
     }
 }

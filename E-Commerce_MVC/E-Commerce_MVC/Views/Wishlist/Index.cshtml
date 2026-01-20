@@ -25,7 +25,7 @@
                 <tr>
                     <td>@item.WishlistId</td>
                     <td>@item.UserId</td>
-                    <td>@item.ProductId</td>
+                    @* <td>@item.ProductId</td> *@
                     <td>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>
                         <a asp-action="Edit" asp-route-id="@item.WishlistId" class="btn btn-sm btn-warning">Sửa</a>

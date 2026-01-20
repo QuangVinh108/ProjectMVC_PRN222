@@ -1,13 +1,13 @@
 ﻿using DAL.Entities;
-using Repositories.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using DAL.IRepository;
 
-namespace Repositories.Repository
+namespace DAL.Repository
 {
     public class UserRepository : IUserRepository
     {
@@ -35,7 +35,7 @@ namespace Repositories.Repository
 
             // TODO: Thay BCrypt.Net bằng logic hash password thực tế của bạn
             // if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            if (password == "password") // Demo
+            if (password == user.PasswordHash)
             {
                 return user;
             }
@@ -86,6 +86,18 @@ namespace Repositories.Repository
         {
             _context.Users.Update(user);
             _context.SaveChanges();
+        }
+
+        public async Task AddUserAsync(User user)
+        {
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+        }
+
+        public Task<User> GetUserByUserName(string username)
+        {
+            return _context.Users
+                .FirstOrDefaultAsync(u => u.UserName == username && u.IsActive);
         }
     }
 }

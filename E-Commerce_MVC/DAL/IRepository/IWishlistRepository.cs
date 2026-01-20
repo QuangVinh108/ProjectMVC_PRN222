@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DAL.Entities;
 
-namespace Repositories.IRepository
+namespace DAL.IRepository
 {
     public interface IWishlistRepository
     {

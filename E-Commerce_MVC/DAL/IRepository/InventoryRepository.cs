@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Repositories.Repository
+namespace DAL.IRepository
 {
     public class InventoryRepository
     {

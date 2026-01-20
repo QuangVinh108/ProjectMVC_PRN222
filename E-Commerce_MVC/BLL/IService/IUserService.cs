@@ -15,5 +15,7 @@ namespace Services.IService
         void DeleteUser(int id);
         void CreateUser(CreateUserViewModel model);
         void UpdateUser(EditUserViewModel model);
+        Task CreateUserAsync(CreateUserViewModel model);
+        Task<User> GetUserByUserName(string username);
     }
 }
