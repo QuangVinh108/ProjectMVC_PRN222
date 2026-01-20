@@ -35,6 +35,24 @@ namespace DAL.Repository
             return cart;
         }
 
+        public async Task<Cart?> GetByUserIdAsync(int userId)
+        {
+            return await _context.Carts
+                .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
+        }
+
+        public async Task ClearCartAsync(int userId)
+        {
+            var cart = await GetByUserIdAsync(userId);
+            if (cart != null && cart.CartItems.Any())
+            {
+                _context.CartItems.RemoveRange(cart.CartItems);
+                await _context.SaveChangesAsync();
+            }
+        }
+
         public void AddItem(int userId, int productId, int quantity)
         {
             var cart = GetCartByUserId(userId);
