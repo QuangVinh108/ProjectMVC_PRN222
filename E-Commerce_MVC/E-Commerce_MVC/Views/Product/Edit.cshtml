@@ -1,0 +1,89 @@
+﻿@model BLL.DTOs.CreateProductViewModel
+
+@{
+    ViewData["Title"] = "Cập nhật sản phẩm";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i> Cập nhật sản phẩm</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" method="post">
+
+                        <input type="hidden" asp-for="ProductId" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tên sản phẩm <span class="text-danger">*</span></label>
+                                    <input asp-for="ProductName" class="form-control" />
+                                    <span asp-validation-for="ProductName" class="text-danger small"></span>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Mã SKU</label>
+                                        <input asp-for="Sku" class="form-control" />
+                                        <span asp-validation-for="Sku" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Giá bán (VNĐ) <span class="text-danger">*</span></label>
+                                        <input asp-for="Price" type="number" class="form-control" step="1000" asp-format="{0:0}" />
+                                        <span asp-validation-for="Price" class="text-danger small"></span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
+                                    <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.Categories">
+                                        <option value="">-- Chọn danh mục --</option>
+                                    </select>
+                                    <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Trạng thái</label>
+                                    <select asp-for="Status" class="form-select">
+                                        <option value="1">Hiển thị (Active)</option>
+                                        <option value="0">Ẩn (Inactive)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Mô tả sản phẩm</label>
+                                    <textarea asp-for="Description" class="form-control" rows="5"></textarea>
+                                    <span asp-validation-for="Description" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
