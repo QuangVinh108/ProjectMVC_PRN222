@@ -1,0 +1,100 @@
+USE ShopDB;
+GO
+
+-- 1. ROLES
+INSERT INTO Roles (RoleName, Description, IsActive) VALUES 
+(N'Admin', N'Quản trị viên hệ thống', 1),
+(N'Customer', N'Khách hàng mua sắm', 1),
+(N'Support', N'Nhân viên hỗ trợ', 1);
+GO
+
+-- 2. USERS (có GoogleId, EmailConfirmed...)
+INSERT INTO Users (RoleId, UserName, Email, PasswordHash, FullName, Phone, Address, IsActive, GoogleId, EmailConfirmed, LoginProvider) VALUES 
+(1, 'admin_sys', 'admin@store.com', '$2a$11$hashed_admin_pass', N'Quản Trị Viên', '0901234567', N'Hà Nội', 1, NULL, 1, 'Local'),
+(2, 'nguyenvana', 'nva@gmail.com', '$2a$11$hashed_user_pass', N'Nguyễn Văn A', '0912345678', N'TP. HCM', 1, NULL, 0, 'Local'),
+(2, 'tranthib', 'ttb@gmail.com', '$2a$11$hashed_user_pass2', N'Trần Thị B', '0987654321', N'Đà Nẵng', 1, 'google_123456', 1, 'Google'),
+(2, 'lethic', 'ltc@gmail.com', '$2a$11$hashed_user_pass3', N'Lê Thị C', '0998887776', N'Cần Thơ', 0, NULL, 0, 'Local');
+GO
+
+-- 3. CATEGORIES
+INSERT INTO Categories (CategoryName, ParentId, Description, IsActive) VALUES 
+(N'Điện tử', NULL, N'Các thiết bị điện tử', 1),
+(N'Thời trang', NULL, N'Quần áo và phụ kiện', 1),
+(N'Điện thoại', 1, N'Smartphone các loại', 1),
+(N'Laptop', 1, N'Máy tính xách tay', 1),
+(N'Áo Nam', 2, N'Thời trang cho nam', 1);
+GO
+
+-- 4. PRODUCTS
+INSERT INTO Products (CategoryId, ProductName, SKU, Description, Price, Status, IsActive) VALUES 
+(3, N'iPhone 15 Pro Max', 'IP15PM-256', N'Titan tự nhiên 256GB', 34990000, 1, 1),
+(3, N'Samsung Galaxy S24 Ultra', 'SS24U-512', N'Màu xám titan 512GB', 31990000, 1, 1),
+(4, N'MacBook Air M2', 'MBA-M2', N'Chip M2 8GB/256GB', 24500000, 1, 1),
+(5, N'Áo Thun Polo', 'POLO-01', N'Cotton thoáng mát', 250000, 1, 1),
+(5, N'Quần Jean Slimfit', 'JEAN-01', N'Jean co giãn 4 chiều', 550000, 1, 1);
+GO
+
+-- 5. INVENTORIES
+INSERT INTO Inventories (ProductId, Quantity, Warehouse) VALUES 
+(1, 50, N'Kho Hà Nội'),
+(2, 30, N'Kho HCM'),
+(3, 20, N'Kho Đà Nẵng'),
+(4, 100, N'Kho HCM'),
+(5, 80, N'Kho Hà Nội');
+GO
+
+-- 6. WISHLIST (User 2)
+INSERT INTO Wishlist (UserId) VALUES (2);
+GO
+
+-- 7. WISHLIST PRODUCTS
+DECLARE @WishlistId INT = (SELECT WishlistId FROM Wishlist WHERE UserId = 2);
+INSERT INTO WishlistProduct (WishlistId, ProductId, Note, Image) VALUES 
+(@WishlistId, 1, N'iPhone yêu thích', '/images/iphone15.jpg'),
+(@WishlistId, 2, N'Mua 2 máy Samsung', '/images/samsung24.jpg');
+GO
+
+-- 8. CART (User 2)
+INSERT INTO Cart (UserId, IsActive) VALUES (2, 1);
+DECLARE @CartId INT = SCOPE_IDENTITY();
+GO
+
+-- 10. ORDERS
+INSERT INTO Orders (UserId, Status, TotalAmount, IsActive) VALUES 
+(2, 'Shipped', 35490000, 1),
+(3, 'Pending', 31990000, 1);
+GO
+
+-- 11. ORDER ITEMS
+INSERT INTO OrderItems (OrderId, ProductId, Quantity, UnitPrice, Image) VALUES 
+(1, 1, 1, 34990000, '/images/iphone15.jpg'),
+(1, 4, 2, 250000, '/images/polo-shirt.jpg'),
+(2, 2, 1, 31990000, '/images/samsung24.jpg');
+GO
+
+-- 12. PAYMENTS
+INSERT INTO Payments (OrderId, PaymentMethod, Amount, Status) VALUES 
+(1, 'CreditCard', 35490000, 'Paid'),
+(2, 'COD', 31990000, 'Pending');
+GO
+
+-- 13. SHIPPING
+INSERT INTO Shipping (OrderId, Address, City, Country, PostalCode, Carrier, TrackingNumber) VALUES 
+(1, N'123 Lê Lợi', N'TP. HCM', N'Vietnam', '700000', 'GHTK', 'GHTK123456');
+GO
+
+-- 14. REVIEWS
+INSERT INTO Reviews (UserId, ProductId, Rating, Comment, IsActive) VALUES 
+(2, 1, 5, N'Sản phẩm tuyệt vời!', 1),
+(2, 4, 4, N'Chất lượng tốt!', 1);
+GO
+
+-- 15. REFRESH TOKENS
+INSERT INTO RefreshTokens (UserId, Token, ExpiresAt) VALUES 
+(2, 'refresh_token_user2_secure', DATEADD(DAY, 7, SYSDATETIME()));
+GO
+
+-- 16. EMAIL VERIFICATION TOKEN (bonus)
+INSERT INTO EmailVerificationTokens (UserId, Token, Email, ExpiresAt) VALUES 
+(2, 'verify_token_nva_123', 'nva@gmail.com', DATEADD(HOUR, 1, SYSDATETIME()));
+GO

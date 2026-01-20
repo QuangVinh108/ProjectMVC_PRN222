@@ -2,6 +2,7 @@
 @inject IAuthorizationService AuthorizationService
 
 <ul class="navbar-nav ms-auto">
+    
     @if (User.Identity?.IsAuthenticated == true)
     {
         <li class="nav-item dropdown">
@@ -13,7 +14,7 @@
                     <a class="dropdown-item" asp-controller="Order" asp-action="MyOrders">
                         <i class="bi bi-box-seam"></i> Đơn hàng
                     </a>
-                </li>
+                </li>               
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">

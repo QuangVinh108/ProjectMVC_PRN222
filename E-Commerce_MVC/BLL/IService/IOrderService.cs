@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using BLL.DTOs;
 
-namespace Services.IService
+namespace BLL.IService
 {
     public interface IOrderService
     {
+        Task<OrderDto?> GetOrderByIdAsync(int orderId);
+        Task<List<OrderDto>> GetUserOrdersAsync(int userId);
+        Task<List<OrderDto>> GetAllOrdersAsync();
+        Task<OrderDto> CreateOrderAsync(CreateOrderDto dto);
+        Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus);
+        Task<bool> CancelOrderAsync(int orderId, int userId);
     }
 }
+

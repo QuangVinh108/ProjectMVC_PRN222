@@ -1,0 +1,104 @@
+﻿@using DAL.Entities
+@model IEnumerable<User>
+
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-people-fill"></i> Danh sách người dùng</h2>
+        <a asp-action="Create" class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-lg"></i> Thêm mới
+        </a>        
+</div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="table-dark text-nowrap">
+                    <tr>
+                        <th class="text-center">ID</th>
+                        <th>Họ và Tên</th>
+                        <th>Email</th>
+                        <th>Vai trò</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-center" style="width: 150px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td class="text-center">@user.UserId</td>
+                            <td class="fw-bold">@user.FullName</td>
+                            <td>@user.Email</td>
+                            <td>
+                                @if (user.Role != null && user.Role.RoleName == "Admin")
+                                {
+                                    <span class="badge bg-danger">Admin</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary">
+                                        @(user.Role != null ? user.Role.RoleName : "User")
+                                    </span>
+                                }
+                            </td>
+
+                            <td class="text-center">
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Hoạt động
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-lock-fill"></i> Đã khóa
+                                    </span>
+                                }
+                            </td>
+
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+
+                                    <a asp-controller="User" asp-action="Edit" asp-route-id="@user.UserId"
+                                       class="btn btn-primary btn-sm" title="Sửa thông tin">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+
+                                    @if (user.IsActive)
+                                    {
+                                        <form asp-action="Delete" asp-route-id="@user.UserId" method="post"
+                                              onsubmit="return confirm('Bạn có chắc muốn KHÓA tài khoản này?');"
+                                              style="display:inline;">
+                                            <button type="submit" class="btn btn-warning btn-sm ms-1" title="Khóa tài khoản">
+                                                <i class="bi bi-lock"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-secondary btn-sm ms-1" disabled title="Đã khóa">
+                                            <i class="bi bi-slash-circle"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">
+            Chưa có người dùng nào trong hệ thống.
+        </div>
+    }
+</div>

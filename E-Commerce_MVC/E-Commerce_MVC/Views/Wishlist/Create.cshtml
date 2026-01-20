@@ -1,0 +1,34 @@
+﻿@model DAL.Entities.Wishlist
+@{
+    ViewData["Title"] = "Tạo Wishlist mới";
+}
+
+<h2>@ViewData["Title"]</h2>
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="form-group mb-3">
+        <label asp-for="UserId" class="form-label"></label>
+        <select asp-for="UserId" class="form-control" asp-items="ViewBag.Users">
+            <option value="">Chọn User</option>
+        </select>
+        <span asp-validation-for="UserId" class="text-danger"></span>
+    </div>
+
+    @* <div class="form-group mb-3"> *@
+    @*     <label asp-for="ProductId" class="form-label"></label> *@
+    @*     <select asp-for="ProductId" class="form-control" asp-items="ViewBag.Products"> *@
+    @*         <option value="">Chọn Sản phẩm</option> *@
+    @*     </select> *@
+    @*     <span asp-validation-for="ProductId" class="text-danger"></span> *@
+    @* </div> *@
+
+    <div class="form-group mb-3">
+        <label asp-for="CreatedAt" class="form-label"></label>
+        <input asp-for="CreatedAt" type="datetime-local" class="form-control" />
+        <span asp-validation-for="CreatedAt" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Tạo mới</button>
+    <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+</form>
