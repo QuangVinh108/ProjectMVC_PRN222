@@ -1,14 +1,14 @@
 ﻿using BLL.DTOs;
+using BLL.IService;
 using DAL.Entities;
-using Repositories.IRepository;
-using Services.IService;
+using DAL.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Services.Service
+namespace BLL.Service
 {
     public class ProductService : IProductService
     {

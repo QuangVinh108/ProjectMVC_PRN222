@@ -1,13 +1,13 @@
-﻿using DAL.Entities;
+﻿using BLL.IService;
+using DAL.Entities;
 using DAL.IRepository;
-using Services.IService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Services.Service
+namespace BLL.Service
 {
     public class RoleService : IRoleService
     {

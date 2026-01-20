@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DAL.Entities;
 
-namespace Services.IService
+namespace BLL.IService
 {
     public interface IWishlistService
     {

@@ -22,8 +22,8 @@ namespace DAL.Repository
                 query = query
                     .Include(o => o.OrderItems)
                         .ThenInclude(oi => oi.Product)
-                    .Include(o => o.Payments)
-                    .Include(o => o.Shippings)
+                    .Include(o => o.Payment)
+                    .Include(o => o.Shipping)
                     .Include(o => o.User);
             }
 
@@ -35,8 +35,8 @@ namespace DAL.Repository
             return await _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
-                .Include(o => o.Payments)
-                .Include(o => o.Shippings)
+                .Include(o => o.Payment)
+                .Include(o => o.Shipping)
                 .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
@@ -48,8 +48,8 @@ namespace DAL.Repository
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.User)
-                .Include(o => o.Payments)
-                .Include(o => o.Shippings)
+                .Include(o => o.Payment)
+                .Include(o => o.Shipping)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }

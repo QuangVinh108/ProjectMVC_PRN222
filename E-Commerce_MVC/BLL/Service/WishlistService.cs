@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BLL.IService;
 using DAL.Entities;
 using DAL.IRepository;
 using Microsoft.EntityFrameworkCore;
-using Services.IService;
 
-namespace Services.Service
+namespace BLL.Service
 {
     public class WishlistService : IWishlistService
     {

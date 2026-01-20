@@ -1,8 +1,8 @@
 ﻿using BLL.DTOs;
+using BLL.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Services.IService;
 
 namespace E_Commerce_MVC.Controllers
 {
