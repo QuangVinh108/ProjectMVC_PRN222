@@ -27,13 +27,10 @@ builder.Services.AddDbContext<ShopDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
-<<<<<<< HEAD
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
-=======
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
->>>>>>> develop
 
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -41,12 +38,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<ICartService, CartService>();
-<<<<<<< HEAD
 builder.Services.AddScoped<IOrderService, OrderService>();
-=======
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
->>>>>>> develop
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
