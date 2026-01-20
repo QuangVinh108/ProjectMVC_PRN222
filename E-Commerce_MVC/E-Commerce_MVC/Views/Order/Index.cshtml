@@ -1,0 +1,88 @@
+@model List<BLL.DTOs.OrderDto>
+@{
+    ViewData["Title"] = "Đơn hàng của tôi";
+}
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">
+            <p class="mb-0">Bạn chưa có đơn hàng nào. <a href="/Cart">Mua sắm ngay!</a></p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã đơn hàng</th>
+                        <th>Ngày đặt</th>
+                        <th>Trạng thái</th>
+                        <th>Tổng tiền</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model)
+                    {
+                        <tr>
+                            <td><strong>#@order.OrderId</strong></td>
+                            <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (order.Status == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">Chờ xử lý</span>
+                                }
+                                else if (order.Status == "Paid")
+                                {
+                                    <span class="badge bg-info">Đã thanh toán</span>
+                                }
+                                else if (order.Status == "Shipped")
+                                {
+                                    <span class="badge bg-primary">Đang giao</span>
+                                }
+                                else if (order.Status == "Delivered")
+                                {
+                                    <span class="badge bg-success">Đã giao</span>
+                                }
+                                else if (order.Status == "Cancelled")
+                                {
+                                    <span class="badge bg-danger">Đã hủy</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@order.Status</span>
+                                }
+                            </td>
+                            <td><strong>@order.TotalAmount.ToString("N0") ₫</strong></td>
+                            <td>
+                                <a href="@Url.Action("Details", new { id = order.OrderId })" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-eye"></i> Xem chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
