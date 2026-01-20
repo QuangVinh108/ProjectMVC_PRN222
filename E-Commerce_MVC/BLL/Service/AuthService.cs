@@ -1,12 +1,12 @@
 ﻿using BLL.IService;
 using DAL.Entities;
-using Repositories.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using DAL.IRepository;
 
 namespace BLL.Service
 {

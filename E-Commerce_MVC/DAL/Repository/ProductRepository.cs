@@ -1,13 +1,13 @@
 ﻿using DAL.Entities;
+using DAL.IRepository;
 using Microsoft.EntityFrameworkCore;
-using Repositories.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Repositories.Repository
+namespace DAL.Repository
 {
     public class ProductRepository : IProductRepository
     {

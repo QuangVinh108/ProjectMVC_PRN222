@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Repositories.IRepository
+namespace DAL.IRepository
 {
     public interface IUserRepository
     {
@@ -16,5 +16,7 @@ namespace Repositories.IRepository
         void UpdateUser(User user);
         User GetUserById(int id); 
         void DeleteUser(int id);
+        Task AddUserAsync(User user);
+        Task<User> GetUserByUserName(string username);
     }
 }

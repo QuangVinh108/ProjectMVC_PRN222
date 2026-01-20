@@ -1,5 +1,5 @@
 ﻿using DAL.Entities;
-using Repositories.IRepository;
+using DAL.IRepository;
 using Services.IService;
 using System;
 using System.Collections.Generic;

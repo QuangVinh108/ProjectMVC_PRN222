@@ -37,7 +37,26 @@
                                     <a class="nav-link" asp-controller="Product" asp-action="Index">Quản lý Sản phẩm</a>
                                 </li>
                             }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="User" asp-action="Index"> Quản lý người dùng</a>
+                            </li>
+                        }
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Product" asp-action="Index">Sản phẩm</a>
+                        </li>
+                            <li class="nav-item position-relative">
+                                <a class="nav-link position-relative" asp-controller="Wishlist" asp-action="Index">
+                                    Wishlist
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger ms-1"
+                                          style="font-size: 0.65em; display: none;" id="wishlistBadge">
+                                        0
+                                    </span>
+                                </a>
+                            </li>
                     </ul>
+                       
                     <!-- Login nút góc phải -->
                     <partial name="_LoginPartial" />
                 </div>
@@ -63,5 +82,24 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        $(document).ready(function() {
+            updateWishlistCount();
+            setInterval(updateWishlistCount, 30000); // 30s
+        });
+
+        async function updateWishlistCount() {
+            try {
+                const response = await fetch('/Wishlist/Count');
+                const count = await response.json();
+                const badge = document.getElementById('wishlistBadge');
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'block' : 'none';
+            } catch (e) {
+                console.log('Load wishlist count failed');
+            }
+        }
+    </script>
 </body>
 </html>
