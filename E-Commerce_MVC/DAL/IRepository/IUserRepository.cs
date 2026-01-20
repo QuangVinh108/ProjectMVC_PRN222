@@ -11,5 +11,10 @@ namespace Repositories.IRepository
     {
         User? GetByUserName(string username);
         Task<User?> AuthenticateAsync(string username, string password);
+        IEnumerable<User> GetAllUsers();
+        void AddUser(User user);
+        void UpdateUser(User user);
+        User GetUserById(int id); 
+        void DeleteUser(int id);
     }
 }

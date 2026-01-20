@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Repositories.IRepository;
 using Repositories.Repository;
+using Services.IService;
+using Services.Service;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,10 +23,13 @@ builder.Services.AddDbContext<ShopDbContext>(options =>
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
