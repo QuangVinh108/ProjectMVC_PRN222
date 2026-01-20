@@ -42,5 +42,50 @@ namespace Repositories.Repository
 
             return null;
         }
+
+        // 1. Hàm lấy danh sách tất cả User
+        public IEnumerable<User> GetAllUsers()
+        {
+            // Giả sử trong ShopDbContext bạn đặt tên bảng là Users
+            return _context.Users.Include(u => u.Role).ToList();
+        }
+
+        // 2. Hàm lấy User theo ID
+        public User GetUserById(int id)
+        {
+            // .Find() là cách nhanh nhất để tìm theo Khóa Chính (Primary Key)
+            return _context.Users.Find(id);
+
+            // Hoặc nếu muốn an toàn hơn có thể dùng:
+            // return _context.Users.FirstOrDefault(u => u.UserId == id);
+        }
+
+        // 3. Hàm Xóa User
+        public void DeleteUser(int id)
+        {
+            var user = _context.Users.Find(id);
+            if (user != null)
+            {
+                // --- Code cũ (Xóa cứng) ---
+                // _context.Users.Remove(user); 
+
+                // --- Code mới (Xóa mềm) ---
+                user.IsActive = false; // Đổi trạng thái thành Inactive
+
+                _context.Users.Update(user); // Đánh dấu là cập nhật
+                _context.SaveChanges();      // Lưu vào database
+            }
+        }
+        public void AddUser(User user)
+        {
+            _context.Users.Add(user);
+            _context.SaveChanges();
+        }
+
+        public void UpdateUser(User user)
+        {
+            _context.Users.Update(user);
+            _context.SaveChanges();
+        }
     }
 }
