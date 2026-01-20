@@ -65,22 +65,22 @@ namespace BLL.Service
             }).ToList();
 
             // 5. Create Payment record
-            order.Payments.Add(new Payment
+            order.Payment = new Payment
             {
                 PaymentMethod = dto.PaymentMethod,
                 Amount = totalAmount,
                 Status = "Pending",
                 PaidAt = null
-            });
+            };
 
             // 6. Create Shipping record
-            order.Shippings.Add(new Shipping
+            order.Shipping = new Shipping
             {
                 Address = dto.ShippingAddress,
                 City = dto.City,
                 Country = dto.Country,
                 PostalCode = dto.PostalCode
-            });
+            };
 
             // 7. Save Order
             var createdOrder = await _orderRepo.CreateAsync(order);
@@ -147,27 +147,27 @@ namespace BLL.Service
                     Quantity = oi.Quantity,
                     UnitPrice = oi.UnitPrice
                 }).ToList(),
-                Payment = order.Payments.FirstOrDefault() != null ? new PaymentDto
+                Payment = order.Payment != null ? new PaymentDto
                 {
-                    PaymentId = order.Payments.First().PaymentId,
+                    PaymentId = order.Payment.PaymentId,
                     OrderId = order.OrderId,
-                    PaymentMethod = order.Payments.First().PaymentMethod,
-                    Amount = order.Payments.First().Amount,
-                    PaidAt = order.Payments.First().PaidAt,
-                    Status = order.Payments.First().Status
+                    PaymentMethod = order.Payment.PaymentMethod,
+                    Amount = order.Payment.Amount,
+                    PaidAt = order.Payment.PaidAt,
+                    Status = order.Payment.Status
                 } : null,
-                Shipping = order.Shippings.FirstOrDefault() != null ? new ShippingDto
+                Shipping = order.Shipping != null ? new ShippingDto
                 {
-                    ShippingId = order.Shippings.First().ShippingId,
+                    ShippingId = order.Shipping.ShippingId,
                     OrderId = order.OrderId,
-                    Address = order.Shippings.First().Address,
-                    City = order.Shippings.First().City,
-                    Country = order.Shippings.First().Country,
-                    PostalCode = order.Shippings.First().PostalCode,
-                    Carrier = order.Shippings.First().Carrier,
-                    TrackingNumber = order.Shippings.First().TrackingNumber,
-                    ShippedDate = order.Shippings.First().ShippedDate,
-                    DeliveryDate = order.Shippings.First().DeliveryDate
+                    Address = order.Shipping.Address,
+                    City = order.Shipping.City,
+                    Country = order.Shipping.Country,
+                    PostalCode = order.Shipping.PostalCode,
+                    Carrier = order.Shipping.Carrier,
+                    TrackingNumber = order.Shipping.TrackingNumber,
+                    ShippedDate = order.Shipping.ShippedDate,
+                    DeliveryDate = order.Shipping.DeliveryDate
                 } : null
             };
         }

@@ -1,7 +1,7 @@
-﻿using DAL.Entities;
+﻿using BLL.IService;
+using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Services.IService;
 
 namespace E_Commerce_MVC.Controllers
 {
