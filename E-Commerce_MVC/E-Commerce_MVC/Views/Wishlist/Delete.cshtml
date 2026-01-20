@@ -1,0 +1,27 @@
+﻿@model DAL.Entities.Wishlist
+@{
+    ViewData["Title"] = "Xóa Wishlist";
+}
+
+<h3>Bạn có chắc muốn xóa wishlist này?</h3>
+<div>
+    <dl class="row">
+        <dt class="col-sm-2">Wishlist ID</dt>
+        <dd class="col-sm-10">@Model.WishlistId</dd>
+
+        <dt class="col-sm-2">User ID</dt>
+        <dd class="col-sm-10">@Model.UserId</dd>
+
+        <dt class="col-sm-2">Product ID</dt>
+        <dd class="col-sm-10">@Model.ProductId</dd>
+
+        <dt class="col-sm-2">Ngày tạo</dt>
+        <dd class="col-sm-10">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="WishlistId" />
+        <input type="submit" value="Xóa" class="btn btn-danger" onclick="return confirm('Chắc chắn xóa?')" />
+        <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+    </form>
+</div>

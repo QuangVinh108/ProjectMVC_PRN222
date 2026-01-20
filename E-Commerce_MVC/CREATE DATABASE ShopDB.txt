@@ -147,3 +147,18 @@ CREATE TABLE Reviews (
     CONSTRAINT FK_Reviews_Users FOREIGN KEY (UserId) REFERENCES Users(UserId),
     CONSTRAINT FK_Reviews_Products FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
 );
+
+CREATE TABLE RefreshTokens (
+    RefreshTokenId INT IDENTITY PRIMARY KEY,
+    UserId         INT NOT NULL,
+    Token          NVARCHAR(255) NOT NULL, -- hoặc UNIQUEIDENTIFIER / VARCHAR(200)
+    ExpiresAt      DATETIME2 NOT NULL,
+    CreatedAt      DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    RevokedAt      DATETIME2 NULL,
+    ReplacedByToken NVARCHAR(255) NULL,    -- dùng nếu bạn muốn rotate token
+    IsRevoked      BIT NOT NULL DEFAULT 0,
+
+    CONSTRAINT FK_RefreshTokens_Users FOREIGN KEY (UserId)
+        REFERENCES Users(UserId)
+);
+
