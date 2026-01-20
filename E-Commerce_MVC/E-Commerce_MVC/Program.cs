@@ -1,6 +1,8 @@
 ﻿using BLL.IService;
 using BLL.Service;
 using DAL.Entities;
+using DAL.IRepository;
+using DAL.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,12 +26,14 @@ builder.Services.AddDbContext<ShopDbContext>(options =>
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<ICartRepository, CartRepository>();
 
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<ICartService, CartService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
