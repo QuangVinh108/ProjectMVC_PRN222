@@ -41,8 +41,14 @@
                         </p>
 
                         <!-- Form đăng nhập thông thường -->
-                        <form asp-action="Login" method="post">
+                        <form asp-action="Login" method="post" id="loginForm">
                             <input type="hidden" asp-for="ReturnUrl" />
+
+                            @* ✅ HIỂN THỊ LỖI VALIDATION - CHỈ HIỂN THỊ KHI CÓ LỖI *@
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div asp-validation-summary="All" class="alert alert-danger validation-error" role="alert"></div>
+                            }
 
                             <div class="mb-3">
                                 <label asp-for="Username" class="form-label">
@@ -95,8 +101,7 @@
                              data-theme="outline"
                              data-text="signin_with"
                              data-size="large"
-                             data-logo_alignment="left"
-                             data-width="100%">
+                             data-logo_alignment="left">
                         </div>
 
                         <!-- Demo credentials -->
@@ -121,6 +126,30 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
+    // ✅ XÓA LỖI VALIDATION KHI RELOAD TRANG
+    window.addEventListener('load', function() {
+        // Kiểm tra nếu là page reload (F5 hoặc Ctrl+R)
+        if (performance.navigation.type === 1 || performance.getEntriesByType('navigation')[0]?.type === 'reload') {
+            // Xóa tất cả validation errors
+            const validationErrors = document.querySelectorAll('.validation-error, .field-validation-error');
+            validationErrors.forEach(el => el.remove());
+
+            // Reset form validation state
+            const form = document.getElementById('loginForm');
+            if (form) {
+                form.classList.remove('was-validated');
+            }
+        }
+
+        console.log("=== DEBUG INFO ===");
+        console.log("Client ID:", document.querySelector('[data-client_id]')?.getAttribute('data-client_id'));
+        console.log("Google SDK loaded:", typeof google !== 'undefined' ? '✅ YES' : '❌ NO');
+
+        if (typeof google === 'undefined') {
+            console.error('❌ Google Sign-In SDK failed to load');
+        }
+    });
+
     function handleCredentialResponse(response) {
         console.log("=== GOOGLE LOGIN SUCCESS ===");
         console.log("Token length:", response.credential.length);
@@ -152,16 +181,6 @@
         console.log("📤 Submitting to /Account/GoogleLogin...");
         form.submit();
     }
-
-    window.addEventListener('load', function() {
-        console.log("=== DEBUG INFO ===");
-        console.log("Client ID:", document.querySelector('[data-client_id]')?.getAttribute('data-client_id'));
-        console.log("Google SDK loaded:", typeof google !== 'undefined' ? '✅ YES' : '❌ NO');
-
-        if (typeof google === 'undefined') {
-            console.error('❌ Google Sign-In SDK failed to load');
-        }
-    });
 </script>
 
 @section Scripts {
@@ -169,5 +188,3 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
-
-    

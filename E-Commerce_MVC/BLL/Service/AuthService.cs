@@ -1,12 +1,13 @@
-﻿using BLL.IService;
+﻿using BLL.DTOs;
+using BLL.IService;
 using DAL.Entities;
+using DAL.IRepository;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using DAL.IRepository;
 
 namespace BLL.Service
 {
@@ -42,6 +43,7 @@ namespace BLL.Service
 
             _context.RefreshTokens.Add(refreshToken);
             await _context.SaveChangesAsync();
+            Console.WriteLine($"✅ Tokens generated for UserId: {user.UserId}");
 
             return (accessToken, refreshTokenString);
         }
@@ -110,6 +112,93 @@ namespace BLL.Service
             await _context.SaveChangesAsync();
 
             return (accessToken, refreshTokenString);
+        }
+
+        public async Task<RegisterResult> RegisterAsync(string username, string email, string password, string fullName)
+        {
+            try
+            {
+                Console.WriteLine($"=== REGISTER SERVICE === Username: {username}, Email: {email}");
+
+                // Check username exists
+                var existingUsername = await _context.Users
+                    .FirstOrDefaultAsync(u => u.UserName == username);
+
+                if (existingUsername != null)
+                {
+                    Console.WriteLine("❌ Username already exists");
+                    return new RegisterResult
+                    {
+                        Success = false,
+                        Message = "Tên tài khoản đã tồn tại"
+                    };
+                }
+
+                // Check email exists
+                var existingEmail = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == email);
+
+                if (existingEmail != null)
+                {
+                    Console.WriteLine("❌ Email already exists");
+                    return new RegisterResult
+                    {
+                        Success = false,
+                        Message = "Email đã được sử dụng"
+                    };
+                }
+
+                // Get Customer role
+                var customerRole = await _context.Roles
+                    .FirstOrDefaultAsync(r => r.RoleName == "Customer");
+
+                if (customerRole == null)
+                {
+                    Console.WriteLine("❌ Customer role not found");
+                    return new RegisterResult
+                    {
+                        Success = false,
+                        Message = "Lỗi hệ thống: không tìm thấy role Customer"
+                    };
+                }
+
+                // Create user
+                var user = new User
+                {
+                    UserName = username,
+                    Email = email,
+                    FullName = fullName,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                    RoleId = customerRole.RoleId,
+                    EmailConfirmed = false,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    LoginProvider = "Local"
+                };
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"✅ User created with UserId: {user.UserId}");
+
+                // TODO: Send verification email
+
+                return new RegisterResult
+                {
+                    Success = true,
+                    Message = "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.",
+                    UserId = user.UserId
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception in RegisterAsync: {ex.Message}");
+                return new RegisterResult
+                {
+                    Success = false,
+                    Message = "Đã xảy ra lỗi khi đăng ký"
+                };
+            }
         }
 
     }

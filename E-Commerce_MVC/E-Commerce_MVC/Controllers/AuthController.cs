@@ -4,7 +4,7 @@ using E_Commerce_MVC.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
-
+using BLL.DTOs;
 namespace E_Commerce_MVC.Controllers
 {
     [ApiController]
@@ -115,26 +115,55 @@ namespace E_Commerce_MVC.Controllers
 
             return NotFound(new { message = "Refresh token không tồn tại" });
         }
+        [HttpPost("register")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            Console.WriteLine($"=== REGISTER API === Username: {request.Username}, Email: {request.Email}");
+
+            // Validate
+            request.Username = request.Username?.Trim();
+            request.Email = request.Email?.Trim();
+            request.FullName = request.FullName?.Trim();
+
+            if (!ModelState.IsValid)
+            {
+                Console.WriteLine("❌ Model validation failed");
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                // Gọi AuthService để đăng ký
+                var result = await _authService.RegisterAsync(
+                    request.Username,
+                    request.Email,
+                    request.Password,
+                    request.FullName
+                );
+
+                if (result.Success)
+                {
+                    Console.WriteLine($"✅ Register successful for {request.Username}");
+                    return Ok(new { message = result.Message ?? "Đăng ký thành công" });
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Register failed: {result.Message}");
+                    return BadRequest(new { message = result.Message ?? "Đăng ký thất bại" });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception in Register: {ex.Message}");
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi đăng ký" });
+            }
+        }
+
+
 
     }
 
 
-    public class LoginRequest
-    {
-        [Required(ErrorMessage = "Tên tài khoản bắt buộc")]
-        [StringLength(50, MinimumLength = 3, ErrorMessage = "Tên tài khoản 3-50 ký tự")]
-        public string Username { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Mật khẩu bắt buộc")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu tối thiểu 6 ký tự")]
-        public string Password { get; set; } = string.Empty;
-    }
-
-    public class RefreshRequest
-    {
-        [Required(ErrorMessage = "Refresh token bắt buộc")]
-        [MinLength(10, ErrorMessage = "Refresh token quá ngắn")]
-        public string RefreshToken { get; set; } = string.Empty;
-    }
 
 }

@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using DAL.IRepository;
-
+using BCrypt;
 namespace DAL.Repository
 {
     public class UserRepository : IUserRepository
@@ -27,21 +27,41 @@ namespace DAL.Repository
 
         public async Task<User?> AuthenticateAsync(string username, string password)
         {
+            Console.WriteLine($"=== REPOSITORY AUTHENTICATE === Username: {username}");
+
             var user = await _context.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.UserName == username && u.IsActive);
+                .FirstOrDefaultAsync(u => u.UserName == username);
 
-            if (user == null) return null;
-
-            // TODO: Thay BCrypt.Net bằng logic hash password thực tế của bạn
-            // if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            if (password == user.PasswordHash)
+            if (user == null)
             {
-                return user;
+                Console.WriteLine("❌ User not found");
+                return null;
             }
 
-            return null;
+            Console.WriteLine($"✅ User found, verifying password...");
+
+            // ✅ VERIFY PASSWORD BẰNG BCRYPT
+            bool isValidPassword = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+
+            if (!isValidPassword)
+            {
+                Console.WriteLine("❌ Password verification failed");
+                return null;
+            }
+
+            Console.WriteLine("✅ Password verified successfully");
+
+            // Check active status
+            if (!user.IsActive)
+            {
+                Console.WriteLine("❌ User is not active");
+                return null;
+            }
+
+            return user;
         }
+
 
         // 1. Hàm lấy danh sách tất cả User
         public IEnumerable<User> GetAllUsers()
