@@ -14,5 +14,6 @@ namespace BLL.IService
         void Create(CreateProductViewModel model);
         void Update(CreateProductViewModel model);
         void Delete(int id);
+        ProductViewModel GetDetail(int id);
     }
 }

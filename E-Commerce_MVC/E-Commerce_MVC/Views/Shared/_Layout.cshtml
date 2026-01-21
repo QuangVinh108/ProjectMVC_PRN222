@@ -25,27 +25,14 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a>
-                        </li>
-                            @if (User.IsInRole("Admin"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="User" asp-action="Index">Quản lý User</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="Product" asp-action="Index">Quản lý Sản phẩm</a>
-                                </li>
-                            }
-                        @if (User.IsInRole("Admin"))
-                        {
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="User" asp-action="Index"> Quản lý người dùng</a>
+                                <a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a>
                             </li>
-                        }
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Product" asp-action="Index">Sản phẩm</a>
-                        </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Shop" asp-action="Index">Sản phẩm</a>
+                            </li>
+
                             <li class="nav-item position-relative">
                                 <a class="nav-link position-relative" asp-controller="Wishlist" asp-action="Index">
                                     Wishlist
@@ -55,6 +42,16 @@
                                     </span>
                                 </a>
                             </li>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Quản lý</a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" asp-controller="User" asp-action="Index">Quản lý User</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Product" asp-action="Index">Quản lý Sản phẩm</a></li>
+                                    </ul>
+                                </li>
+                            }
                     </ul>
                        
                     <!-- Login nút góc phải -->
