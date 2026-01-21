@@ -1,4 +1,6 @@
 ﻿using BLL.IService;
+using BLL.Service;
+using E_Commerce_MVC.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
@@ -10,10 +12,12 @@ namespace E_Commerce_MVC.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IGoogleAuthService _googleAuthService; // new
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, IGoogleAuthService googleAuthService)
         {
             _authService = authService;
+            _googleAuthService = googleAuthService; // new
         }
 
         [HttpPost("login")]
@@ -39,6 +43,47 @@ namespace E_Commerce_MVC.Controllers
                 return Unauthorized(new { message = "Tài khoản hoặc mật khẩu không đúng" });
 
             return Ok(new { accessToken, refreshToken });
+        }
+
+        [HttpPost("google-login")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.IdToken))
+                return BadRequest(new { message = "Google ID Token bắt buộc" });
+
+            // Verify Google token
+            var googleUser = await _googleAuthService.VerifyGoogleTokenAsync(request.IdToken);
+            if (googleUser == null)
+            {
+                return Unauthorized(new { message = "Google token không hợp lệ hoặc đã hết hạn" });
+            }
+
+            // Handle login logic với 3 trường hợp
+            var result = await _googleAuthService.HandleGoogleLoginAsync(googleUser);
+
+            if (!result.Success)
+            {
+                // TRƯỜNG HỢP 3: Email conflict
+                if (result.ErrorType == BLL.DTOs.GoogleAuthErrorType.EmailNotVerifiedByGoogle)
+                {
+                    return BadRequest(new
+                    {
+                        message = result.Message,
+                        errorType = "EMAIL_NOT_VERIFIED"
+                    });
+                }
+
+                return BadRequest(new { message = result.Message });
+            }
+
+            // Thành công - trả về tokens
+            return Ok(new
+            {
+                accessToken = result.AccessToken,
+                refreshToken = result.RefreshToken,
+                message = result.Message
+            });
         }
 
         [HttpPost("refresh")]

@@ -83,5 +83,34 @@ namespace BLL.Service
 
             return true;
         }
+        public async Task<(string? accessToken, string? refreshToken)> GenerateTokensAsync(int userId)
+        {
+            // Lấy user với Role để generate JWT
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (user == null || !user.IsActive)
+                return (null, null);
+
+            // Revoke old refresh tokens (giống logic LoginAsync)
+            var oldTokens = _context.RefreshTokens.Where(rt => rt.UserId == user.UserId && !rt.IsRevoked);
+            foreach (var token in oldTokens)
+            {
+                token.IsRevoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+            }
+
+            // Generate tokens bằng JwtService (giống logic LoginAsync)
+            var accessToken = _jwtService.GenerateAccessToken(user);
+            var refreshTokenString = _jwtService.GenerateRefreshToken();
+            var refreshToken = _jwtService.CreateRefreshToken(user, refreshTokenString);
+
+            _context.RefreshTokens.Add(refreshToken);
+            await _context.SaveChangesAsync();
+
+            return (accessToken, refreshTokenString);
+        }
+
     }
 }
