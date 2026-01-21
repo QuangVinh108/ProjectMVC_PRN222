@@ -16,9 +16,11 @@ namespace BLL.Service
     public class InventoryService : IInventoryService
     {
         private readonly IInventoryRepository _inventoryRepo;
-        public InventoryService(IInventoryRepository inventoryRepo)
+        private readonly IProductRepository _productRepo;
+        public InventoryService(IInventoryRepository inventoryRepo, IProductRepository productRepo)
         {
             _inventoryRepo = inventoryRepo;
+            _productRepo = productRepo;
         }
         public async Task<GenericResult<InventoryDto?>> GetByProductIdAsync(int productId)
         {
@@ -119,34 +121,40 @@ namespace BLL.Service
         {
             try
             {
-                if(dto.ProductId <= 0)
-                {
+                if (dto.ProductId <= 0)
                     return GenericResult<InventoryDto>.Failure("ProductId is required");
-                }
 
-                //Check duplicate
+                // ✅ KIỂM TRA PRODUCT TỒN TẠI
+                var product =  _productRepo.GetProductById(dto.ProductId);
+                if (product == null)
+                    return GenericResult<InventoryDto>.Failure("Không tìm thấy sản phẩm với ID này");
+
+                // Check duplicate
                 var existing = await _inventoryRepo.GetByProductIdAsync(dto.ProductId);
-                if(existing != null)
-                {
-                    return GenericResult<InventoryDto>.Failure("Inventory for this product already exists");
-                }
+                if (existing != null)
+                    return GenericResult<InventoryDto>.Failure("Inventory đã tồn tại");
 
                 var inventory = new Inventory
                 {
                     ProductId = dto.ProductId,
                     Quantity = dto.Quantity,
-                    Warehouse = dto.Warehouse,
+                    Warehouse = dto.Warehouse ?? string.Empty,
                 };
 
                 var createdInventory = await _inventoryRepo.CreateAsync(inventory);
-                var createdDto = MapToDto(createdInventory);
-                return GenericResult<InventoryDto>.Success(createdDto, "Inventory created successfully");
+
+                // ✅ RELOAD với Product để tránh NULL
+                var inventoryWithProduct = await _inventoryRepo.GetByProductIdAsync(dto.ProductId);
+                var createdDto = MapToDto(inventoryWithProduct!);
+
+                return GenericResult<InventoryDto>.Success(createdDto);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                return GenericResult<InventoryDto>.Failure($"Error creating inventory: {ex.Message}");
+                return GenericResult<InventoryDto>.Failure($"Lỗi tạo kho: {ex.Message}");
             }
         }
+
 
         public async Task<GenericResult<InventoryDto?>> UpdateAsync(int productId, UpdateInventoryDto dto)
         {
@@ -245,7 +253,7 @@ namespace BLL.Service
             {
                 InventoryId = inventory.InventoryId,
                 ProductId = inventory.ProductId,
-                ProductName = inventory.Product.ProductName,
+                ProductName = inventory.Product?.ProductName ?? "Unknown",  // ✅ NULL SAFE
                 Quantity = inventory.Quantity,
                 Warehouse = inventory.Warehouse,
                 UpdatedAt = inventory.UpdatedAt

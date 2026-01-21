@@ -10,24 +10,24 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-        @* Navbar chỉ hiện KHÔNG phải Login/Register *@
+    @* Navbar chỉ hiện KHÔNG phải Login/Register *@
     @if (ViewContext.RouteData.Values["Controller"]?.ToString() != "Account")
     {
 
         <header>
             <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-            <div class="container-fluid px-4">
-                <a class="navbar-brand fw-bold fs-3" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-shop text-primary"></i> E-Shop
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a>
-                        </li>
+                <div class="container-fluid px-4">
+                    <a class="navbar-brand fw-bold fs-3" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-shop text-primary"></i> E-Shop
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a>
+                            </li>
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
@@ -36,48 +36,59 @@
                                 <li class="nav-item">
                                     <a class="nav-link" asp-controller="Product" asp-action="Index">Quản lý Sản phẩm</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Inventory" asp-action="Index">
+                                        <i class="bi bi-box-seam"></i> Quản lý Kho hàng
+                                    </a>
+                                </li>
                             }
-                        @if (User.IsInRole("Admin"))
-                        {
+                            @* @if (User.IsInRole("Admin")) *@
+                            @* { *@
+                            @*     <li class="nav-item"> *@
+                            @*         <a class="nav-link" asp-controller="User" asp-action="Index"> Quản lý người dùng</a> *@
+                            @*     </li> *@
+                            @* } *@
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="User" asp-action="Index"> Quản lý người dùng</a>
+                                <a class="nav-link" asp-controller="Product" asp-action="Index">Sản phẩm</a>
                             </li>
-                        }
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Product" asp-action="Index">Sản phẩm</a>
-                        </li>
                             <li class="nav-item position-relative">
                                 <a class="nav-link position-relative" asp-controller="Wishlist" asp-action="Index">
                                     Wishlist
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger ms-1"
-                                          style="font-size: 0.65em; display: none;" id="wishlistBadge">
+                                    style="font-size: 0.65em; display: none;" id="wishlistBadge">
                                         0
                                     </span>
                                 </a>
                             </li>
-                    </ul>
-                       
-                    <!-- Login nút góc phải -->
-                    <partial name="_LoginPartial" />
+                        </ul>
+
+                        <!-- Login nút góc phải -->
+                        <partial name="_LoginPartial" />
+                    </div>
                 </div>
-            </div>
-        </nav>
-    </header>
-    }
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-        @if (ViewContext.RouteData.Values["Controller"]?.ToString() != "Account")
-    {
+            </nav>
+        </header>
+
+        <div class="container">
+            <main role="main" class="pb-3">
+                @RenderBody()
+            </main>
+        </div>
 
         <footer class="border-top footer text-muted">
             <div class="container">
-            &copy; 2026 - E_Commerce_MVC - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
+                &copy; 2026 - E_Commerce_MVC - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            </div>
+        </footer>
     }
+    else
+    {
+        <div class="container py-5">
+            @RenderBody()
+        </div>
+    }
+
+        
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
