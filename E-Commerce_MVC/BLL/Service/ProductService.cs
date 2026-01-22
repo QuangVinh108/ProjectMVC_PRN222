@@ -30,7 +30,8 @@ namespace BLL.Service
                 Sku = p.Sku,
                 Price = p.Price,
                 Status = p.Status,
-                CategoryName = p.Category != null ? p.Category.CategoryName : "Chưa phân loại"
+                CategoryName = p.Category != null ? p.Category.CategoryName : "Chưa phân loại",
+                Image = p.Image
             }).ToList();
         }
 
@@ -47,7 +48,8 @@ namespace BLL.Service
                 Price = p.Price,
                 Description = p.Description,
                 CategoryId = p.CategoryId,
-                Status = p.Status
+                Status = p.Status,
+                Image = p.Image
             };
         }
 
@@ -61,7 +63,8 @@ namespace BLL.Service
                 Description = model.Description,
                 CategoryId = model.CategoryId,
                 Status = model.Status, 
-                CreatedAt = DateTime.Now 
+                CreatedAt = DateTime.Now,
+                Image = model.Image
             };
 
             _productRepository.AddProduct(product);
@@ -69,17 +72,25 @@ namespace BLL.Service
 
         public void Update(CreateProductViewModel model)
         {
+            // Lấy sản phẩm từ DB lên
             var product = _productRepository.GetProductById(model.ProductId);
+
             if (product != null)
             {
                 product.ProductName = model.ProductName;
-                product.Sku = model.Sku;
                 product.Price = model.Price;
-                product.Description = model.Description;
                 product.CategoryId = model.CategoryId;
+                product.Sku = model.Sku;
+                product.Description = model.Description;
                 product.Status = model.Status;
+                product.UpdatedAt = DateTime.Now;
 
-                product.UpdatedAt = DateTime.Now; 
+                // Cập nhật ảnh (Nếu model.Image có giá trị mới từ Controller gửi xuống)
+                // Lưu ý: Controller đã xử lý logic giữ ảnh cũ nếu không upload mới rồi
+                if (!string.IsNullOrEmpty(model.Image))
+                {
+                    product.Image = model.Image;
+                }
 
                 _productRepository.UpdateProduct(product);
             }
@@ -88,6 +99,27 @@ namespace BLL.Service
         public void Delete(int id)
         {
             _productRepository.DeleteProduct(id);
+        }
+
+        public ProductViewModel GetDetail(int id)
+        {
+            // Gọi Repo lấy Entity (đã bao gồm Category nhờ .Include ở Repo)
+            var p = _productRepository.GetProductById(id);
+
+            if (p == null) return null;
+
+            // Map sang ProductViewModel (đúng kiểu View cần)
+            return new ProductViewModel
+            {
+                ProductId = p.ProductId,
+                ProductName = p.ProductName,
+                Sku = p.Sku,
+                Price = p.Price,
+                Description = p.Description, // Giờ đã có chỗ chứa
+                CategoryName = p.Category != null ? p.Category.CategoryName : "N/A",
+                Status = p.Status,
+                Image = p.Image
+            };
         }
     }
 }

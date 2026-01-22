@@ -18,5 +18,6 @@ namespace DAL.IRepository
         void DeleteUser(int id);
         Task AddUserAsync(User user);
         Task<User> GetUserByUserName(string username);
+        User GetUserByEmail(string email);
     }
 }
