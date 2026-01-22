@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -26,5 +27,11 @@ namespace BLL.DTOs
         public int CategoryId { get; set; }
 
         public byte Status { get; set; } = 1; // Mặc định là 1 (Active)
+
+        [Display(Name = "Ảnh sản phẩm")]
+        public IFormFile? ImageFile { get; set; }
+
+        // Thuộc tính này để chứa đường dẫn ảnh (string) truyền xuống Service
+        public string? Image { get; set; }
     }
 }

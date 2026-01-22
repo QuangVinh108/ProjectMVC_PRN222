@@ -63,6 +63,7 @@ CREATE TABLE Products (
     CreatedAt     DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     UpdatedAt     DATETIME2 NULL,
     IsActive      BIT NOT NULL DEFAULT 1,
+    Image         NVARCHAR(500) NULL;
     CONSTRAINT FK_Products_Categories FOREIGN KEY (CategoryId) REFERENCES Categories(CategoryId)
 );
 

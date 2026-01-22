@@ -197,6 +197,7 @@ public partial class ShopDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("SKU");
             entity.Property(e => e.Status).HasDefaultValue((byte)1);
+            entity.Property(e => e.Image).HasMaxLength(500);
 
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)

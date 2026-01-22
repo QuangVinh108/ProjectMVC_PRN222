@@ -12,7 +12,7 @@
                     <h4 class="mb-0"><i class="bi bi-plus-circle-fill me-2"></i> Thêm sản phẩm mới</h4>
                 </div>
                 <div class="card-body p-4">
-                    <form asp-action="Create" method="post">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
@@ -43,6 +43,13 @@
                                         <option value="">-- Chọn danh mục --</option>
                                     </select>
                                     <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="ImageFile" class="form-label fw-bold">Ảnh sản phẩm</label>
+                                    <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
+                                    <span asp-validation-for="ImageFile" class="text-danger small"></span>
+                                    <div class="form-text text-muted">Chấp nhận file ảnh (jpg, png, webp...)</div>
                                 </div>
                             </div>
 

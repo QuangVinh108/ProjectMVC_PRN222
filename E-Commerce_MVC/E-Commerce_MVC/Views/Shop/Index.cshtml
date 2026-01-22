@@ -1,0 +1,137 @@
+﻿@model IEnumerable<BLL.DTOs.ProductViewModel>
+
+@{
+    ViewData["Title"] = "Cửa hàng";
+}
+
+<div class="bg-light py-4 mb-4">
+    <div class="container text-center">
+        <h1 class="fw-bold mb-0">Cửa hàng trực tuyến</h1>
+        <p class="text-muted mb-0">Khám phá các sản phẩm công nghệ & thời trang mới nhất</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-6 col-lg-5">
+            <form asp-controller="Shop" asp-action="Index" method="get">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="searchTerm" class="form-control border-start-0 border-end-0"
+                           placeholder="Bạn muốn tìm gì hôm nay?"
+                           value="@ViewBag.CurrentFilter">
+
+                    @if (!string.IsNullOrEmpty(ViewBag.CurrentFilter as string))
+                    {
+                        <a asp-action="Index" class="btn btn-white border border-start-0 text-danger" title="Xóa tìm kiếm">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    }
+                    <button class="btn btn-primary px-4" type="submit">Tìm</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-auto ms-auto"></div>
+
+        <div class="col-md-auto">
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle shadow-sm w-100" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-sort-down me-1"></i> Sắp xếp theo
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><a class="dropdown-item" href="#">Mới nhất</a></li>
+                    <li><a class="dropdown-item" href="#">Giá: Thấp đến Cao</a></li>
+                    <li><a class="dropdown-item" href="#">Giá: Cao đến Thấp</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ViewBag.CurrentFilter as string))
+    {
+        <div class="mb-3">
+            <span class="text-muted">Kết quả tìm kiếm cho: </span>
+            <span class="fw-bold text-dark">"@ViewBag.CurrentFilter"</span>
+            <span class="badge bg-secondary rounded-pill ms-2">@Model.Count() sản phẩm</span>
+        </div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-hover product-card">
+                        <div class="position-relative overflow-hidden bg-light ratio ratio-1x1 rounded-top">
+                            <a asp-action="Details" asp-route-id="@item.ProductId">
+                                @if (!string.IsNullOrEmpty(item.Image))
+                                {
+                                    <img src="@item.Image" class="card-img-top object-fit-cover product-img" alt="@item.ProductName">
+                                }
+                                else
+                                {
+                                    <img src="https://placehold.co/400x400?text=No+Image" class="card-img-top object-fit-cover product-img" alt="@item.ProductName">
+                                }
+                            </a>
+
+                        </div>
+
+                        <div class="card-body d-flex flex-column">
+                            <div class="small text-muted mb-1 text-uppercase">@item.CategoryName</div>
+
+                            <h5 class="card-title text-truncate mb-1">
+                                <a asp-action="Details" asp-route-id="@item.ProductId" class="text-decoration-none text-dark stretched-link">
+                                    @item.ProductName
+                                </a>
+                            </h5>
+
+                            <div class="mt-auto pt-2">
+                                <span class="fw-bold text-primary fs-5">@item.Price.ToString("N0") ₫</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5 bg-light rounded-3">
+            <div class="mb-3">
+                <i class="bi bi-search display-1 text-secondary opacity-50"></i>
+            </div>
+            <h4 class="fw-bold">Không tìm thấy sản phẩm nào</h4>
+            <p class="text-muted">Hãy thử từ khóa khác hoặc xem danh mục phổ biến.</p>
+            <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-primary mt-2">
+                Xem tất cả sản phẩm
+            </a>
+        </div>
+    }
+</div>
+
+<style>
+    /* Hiệu ứng nâng thẻ Card */
+    .shadow-hover {
+        transition: all 0.3s ease;
+        border: 1px solid #eee;
+    }
+
+        .shadow-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+            border-color: transparent;
+        }
+
+    /* Zoom ảnh nhẹ */
+    .product-img {
+        transition: transform 0.5s ease;
+    }
+
+    .shadow-hover:hover .product-img {
+        transform: scale(1.05);
+    }
+</style>

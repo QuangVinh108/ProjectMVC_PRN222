@@ -14,5 +14,7 @@ namespace BLL.DTOs
         public decimal Price { get; set; }
         public string CategoryName { get; set; } // Hiển thị tên danh mục
         public byte Status { get; set; } // 1: Active, 0: Inactive
+        public string? Description { get; set; }
+        public string? Image { get; set; } // Thêm dòng này để hiển thị ảnh
     }
 }
