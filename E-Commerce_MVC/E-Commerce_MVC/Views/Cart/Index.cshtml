@@ -18,15 +18,47 @@ else
                 <th>Sản phẩm</th>
                 <th>Giá</th>
                 <th>Số lượng</th>
+                <th style="width:120px;">Hành động</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var item in Model.CartItems)
             {
                 <tr>
-                    <td>@item.Product.ProductName</td>
-                    <td>@item.UnitPrice</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            @if (!string.IsNullOrEmpty(item.Image))
+                            {
+                                <img src="@item.Image" alt="@item.Product.ProductName" style="width:60px; height:60px; object-fit:cover;" class="me-3 rounded" />
+                            }
+                            <div>
+                                <div class="fw-bold">@item.Product.ProductName</div>
+                                <div class="text-muted small">SKU: @(item.Product.Sku ?? "N/A")</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>@item.UnitPrice.ToString("N0") ₫</td>
                     <td>@item.Quantity</td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <form asp-controller="Cart" asp-action="Remove" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?');" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="cartItemId" value="@item.CartItemId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+
+                            <form asp-controller="Cart" asp-action="Update" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="cartItemId" value="@item.CartItemId" />
+                                <input type="number" name="quantity" value="@item.Quantity" min="1" class="form-control form-control-sm" style="width:70px;" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Cập nhật">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
             }
         </tbody>

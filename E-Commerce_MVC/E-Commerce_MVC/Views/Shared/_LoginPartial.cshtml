@@ -4,6 +4,15 @@
 <ul class="navbar-nav ms-auto">
     @if (User.Identity?.IsAuthenticated == true)
     {
+        <!-- Cart button only visible after login -->
+        <li class="nav-item position-relative">
+            <a class="nav-link position-relative" asp-controller="Cart" asp-action="Index" title="Giỏ hàng">
+                <i class="bi bi-cart3"></i> Giỏ hàng
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger ms-1"
+                      style="font-size:0.65em; display:none;" id="cartBadge">0</span>
+            </a>
+        </li>
+
         <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                 <i class="bi bi-person-circle"></i> @User.Identity.Name
@@ -13,28 +22,8 @@
                     <a class="dropdown-item" asp-controller="Order" asp-action="MyOrders">
                         <i class="bi bi-box-seam"></i> Đơn hàng
                     </a>
-                </li>
-
-                @if (!User.IsInRole("Admin"))
-                {
-                    <li>
-                        <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
-                            <i class="bi bi-person-vcard"></i> Thông tin cá nhân
-                        </a>
-                    </li>
-                }
-
-                @if (User.IsInRole("Admin"))
-                {
-                    <li>
-                        <a class="dropdown-item" asp-controller="User" asp-action="Index">
-                            <i class="bi bi-people"></i> Quản lý người dùng
-                        </a>
-                    </li>
-                }
-
+                </li>               
                 <li><hr class="dropdown-divider"></li>
-
                 <li>
                     <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">
                         <button type="submit" class="dropdown-item">
@@ -54,3 +43,27 @@
         </li>
     }
 </ul>
+
+<script>
+    (function () {
+        async function updateCartCount() {
+            try {
+                const res = await fetch('/Cart/Count');
+                if (!res.ok) return;
+                const count = await res.json();
+                const badge = document.getElementById('cartBadge');
+                if (!badge) return;
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'block' : 'none';
+            } catch (e) {
+                // no-op
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateCartCount);
+        } else {
+            updateCartCount();
+        }
+    })();
+</script>
