@@ -38,15 +38,18 @@
                     @(Model.Description ?? "Sản phẩm này chưa có mô tả chi tiết.")
                 </p>
 
-                <div class="d-flex gap-3 align-items-center mb-4">
-                    <input type="number" class="form-control" value="1" min="1" style="width: 80px;">
-                    <button class="btn btn-primary btn-lg flex-grow-1">
+                <!-- Add-to-cart form (posts to CartController.Add) -->
+                <form asp-controller="Cart" asp-action="Add" method="post" class="d-flex gap-3 align-items-center mb-4 add-to-cart-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productId" value="@Model.ProductId" />
+                    <input type="number" name="quantity" class="form-control" value="1" min="1" style="width: 80px;" />
+                    <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                         <i class="bi bi-cart-plus me-2"></i> Thêm vào giỏ hàng
                     </button>
-                    <button class="btn btn-outline-danger btn-lg" title="Yêu thích">
+                    <button type="button" class="btn btn-outline-danger btn-lg" title="Yêu thích">
                         <i class="bi bi-heart"></i>
                     </button>
-                </div>
+                </form>
 
                 <div class="border-top pt-4 mt-4">
                     <div class="d-flex align-items-center mb-2">
@@ -62,3 +65,56 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Optional AJAX submit to keep user on product page and update the cart badge
+        (function () {
+            const form = document.querySelector('.add-to-cart-form');
+            if (!form) return;
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const fd = new FormData(form);
+                try {
+                    // Get antiforgery token from form hidden input
+                    const token = fd.get('__RequestVerificationToken');
+
+                    const res = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            // send token in header that ASP.NET core antiforgery understands
+                            'RequestVerificationToken': token
+                        },
+                        // Important: include credentials so cookies (auth cookie / jwt cookie) are sent
+                        credentials: 'same-origin',
+                        body: fd
+                    });
+
+                    if (!res.ok) throw new Error('Request failed');
+
+                    const data = await res.json();
+                    if (data?.success) {
+                        // update cart badge if present
+                        const badge = document.getElementById('cartBadge');
+                        if (badge) {
+                            badge.textContent = data.count ?? badge.textContent;
+                            badge.style.display = (data.count ?? 0) > 0 ? 'block' : 'none';
+                        }
+                        // simple feedback
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        const original = submitBtn.innerHTML;
+                        submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Đã thêm';
+                        setTimeout(() => submitBtn.innerHTML = original, 1200);
+                    } else {
+                        alert(data?.error ?? 'Không thể thêm vào giỏ hàng');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Lỗi khi thêm vào giỏ hàng');
+                }
+            });
+        })();
+    </script>
+}
