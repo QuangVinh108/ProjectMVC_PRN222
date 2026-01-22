@@ -1,6 +1,11 @@
 ﻿@model DAL.Entities.Cart
 
-<h1>🛒 Giỏ hàng</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">🛒 Giỏ hàng</h1>
+    <a asp-controller="Order" asp-action="Index" class="btn btn-outline-primary">
+        <i class="bi bi-card-checklist me-1"></i> Đơn hàng
+    </a>
+</div>
 
 @if (Model == null)
 {
@@ -48,7 +53,12 @@ else
                             </div>
                         </div>
                     </td>
-                    <td class="align-middle text-center">@item.UnitPrice.ToString("N0") ₫</td>
+
+                    @* Add data-unitprice using invariant format so JS can parse reliably *@
+                    <td class="align-middle text-center" data-unitprice="@(item.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                        @item.UnitPrice.ToString("N0") ₫
+                    </td>
+
                     @* visible quantity cell that we will update after AJAX success *@
                     <td class="cart-qty-display align-middle text-center">@item.Quantity</td>
                     <td class="align-middle text-center">
@@ -74,6 +84,24 @@ else
             }
         </tbody>
     </table>
+
+    @* Checkout summary and buttons (fixed: use inline expression to avoid nested @{ } inside @if/@else) *@
+    <div class="d-flex justify-content-end mt-3">
+        <div class="card" style="width:360px;">
+            <div class="card-body">
+                <p class="mb-2"><strong>Tổng tiền:</strong> <span id="cartTotal" class="text-danger fs-5">@((Model.CartItems.Sum(i => i.UnitPrice * i.Quantity)).ToString("N0")) ₫</span></p>
+                <p class="text-muted small mb-3">Phí vận chuyển và chi tiết thanh toán sẽ được chọn ở trang thanh toán.</p>
+                <div class="d-grid gap-2">
+                    <a asp-controller="Order" asp-action="Checkout" class="btn btn-success btn-lg">
+                        <i class="bi bi-credit-card"></i> Thanh toán
+                    </a>
+                    <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Tiếp tục mua sắm
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 @section Scripts {
     <script>
@@ -86,6 +114,38 @@ else
                     clearTimeout(t);
                     t = setTimeout(function () { fn.apply(null, args); }, delay);
                 };
+            }
+
+            // Format number with thousand separators (use en-US to match server "N0" output)
+            function formatNumber(n) {
+                return (n || 0).toLocaleString('en-US');
+            }
+
+            // Recalculate total from DOM (data-unitprice and quantity inputs / display)
+            function recalcTotal() {
+                const rows = document.querySelectorAll('table tbody tr');
+                let sum = 0;
+                rows.forEach(row => {
+                    const unitTd = row.querySelector('[data-unitprice]');
+                    if (!unitTd) return;
+                    // parse invariant decimal from attribute
+                    const unit = parseFloat(unitTd.getAttribute('data-unitprice').replace(',', '.')) || 0;
+
+                    const qtyInput = row.querySelector('.cart-quantity-input');
+                    const qtyDisplay = row.querySelector('.cart-qty-display');
+                    let qty = 0;
+                    if (qtyInput) {
+                        qty = parseInt(qtyInput.value, 10) || 0;
+                    } else if (qtyDisplay) {
+                        qty = parseInt(qtyDisplay.textContent.trim(), 10) || 0;
+                    }
+                    sum += unit * qty;
+                });
+
+                const totalEl = document.getElementById('cartTotal');
+                if (totalEl) {
+                    totalEl.textContent = formatNumber(sum) + ' ₫';
+                }
             }
 
             const tokenInput = document.querySelector('#afToken input[name="__RequestVerificationToken"]');
@@ -132,6 +192,9 @@ else
                                 badge.textContent = data.count;
                                 badge.style.display = (data.count > 0) ? 'block' : 'none';
                             }
+
+                            // Recalculate total on page using DOM values
+                            recalcTotal();
                         } else {
                             alert(data?.error ?? 'Không thể cập nhật số lượng');
                         }
@@ -153,6 +216,11 @@ else
             }, 600);
 
             inputs.forEach(i => i.addEventListener('input', handler));
+
+            // Ensure total is correct on initial load
+            document.addEventListener('DOMContentLoaded', recalcTotal, false);
+            // Also run immediately in case script loaded after DOMContentLoaded
+            recalcTotal();
         })();
     </script>
 }
