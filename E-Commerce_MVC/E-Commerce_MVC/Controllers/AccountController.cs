@@ -19,8 +19,8 @@ namespace E_Commerce_MVC.Controllers
         private readonly IHttpClientFactory _httpClient;
         private readonly IEmailService _emailService; //EMAIL SERVICE
 
-        public AccountController(IAuthService authService,IUserService userService, IHttpClientFactory httpClient)
-        public AccountController(IAuthService authService, 
+        public AccountController(IAuthService authService,
+            IUserService userService, 
             IGoogleAuthService googleAuthService,
             IHttpClientFactory httpClient,
             IEmailService emailService)
@@ -30,7 +30,7 @@ namespace E_Commerce_MVC.Controllers
             _googleAuthService = googleAuthService;
             _httpClient = httpClient;
             _emailService = emailService;
-        }
+        }       
 
         // ==================== LOGIN ====================
 
