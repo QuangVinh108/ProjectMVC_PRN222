@@ -41,8 +41,7 @@ namespace BLL.Service
         public void CreateUser(CreateUserViewModel model)
         {
             // 1. Hash mật khẩu (Giả lập hash đơn giản, thực tế nên dùng BCrypt)
-            // var passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
-            var passwordHash = model.Password; // Tạm thời lưu thô (Lưu ý: Cần sửa lại để bảo mật)
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);            
 
             // 2. Map từ ViewModel sang Entity
             var newUser = new User
@@ -92,8 +91,7 @@ namespace BLL.Service
             {
                 UserName = model.UserName,
                 Email = model.Email,
-                //PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
-                PasswordHash = model.Password,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
                 FullName = model.FullName,
                 Phone = model.Phone,
                 Address = model.Address,
