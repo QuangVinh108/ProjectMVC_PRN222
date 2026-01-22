@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực OTP - E-Commerce</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .email-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+            .header h1 {
+                color: #ffffff;
+                font-size: 28px;
+                margin: 0;
+                font-weight: 600;
+            }
+
+            .header .icon {
+                font-size: 48px;
+                margin-bottom: 10px;
+            }
+
+        .content {
+            padding: 40px 30px;
+            background-color: #ffffff;
+        }
+
+            .content h2 {
+                color: #333333;
+                font-size: 24px;
+                margin-bottom: 20px;
+                font-weight: 600;
+            }
+
+            .content p {
+                color: #666666;
+                font-size: 16px;
+                margin-bottom: 15px;
+            }
+
+        .otp-container {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .otp-code {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 12px;
+            color: #667eea;
+            background: #ffffff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            display: inline-block;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 18px 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+
+            .warning-box p {
+                margin: 0;
+                color: #856404;
+                font-size: 15px;
+            }
+
+            .warning-box strong {
+                font-weight: 700;
+                color: #664d03;
+            }
+
+        .info-text {
+            color: #999999;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 30px;
+            line-height: 1.8;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+            margin: 30px 0;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+            .footer p {
+                color: #999999;
+                font-size: 13px;
+                margin: 5px 0;
+            }
+
+            .footer a {
+                color: #667eea;
+                text-decoration: none;
+                font-weight: 500;
+            }
+
+                .footer a:hover {
+                    text-decoration: underline;
+                }
+
+        .security-note {
+            background-color: #f0f4ff;
+            border: 1px dashed #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+            .security-note p {
+                color: #4a5568;
+                font-size: 13px;
+                margin: 0;
+            }
+
+        @media only screen and (max-width: 600px) {
+            .email-wrapper {
+                border-radius: 0;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+
+            .otp-code {
+                font-size: 32px;
+                letter-spacing: 8px;
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <!-- Header -->
+        <div class="header">
+            <div class="icon">🛒</div>
+            <h1>E-Commerce</h1>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <h2>Xác thực tài khoản</h2>
+            <p>Xin chào,</p>
+            <p>Cảm ơn bạn đã đăng ký tài khoản tại <strong>E-Commerce</strong>. Để hoàn tất quá trình đăng ký, vui lòng sử dụng mã OTP bên dưới:</p>
+
+            <!-- OTP Code -->
+            <div class="otp-container">
+                <div class="otp-code">{{OTP_CODE}}</div>
+            </div>
+
+            <!-- Warning Box -->
+            <div class="warning-box">
+                <p>⏱️ Mã OTP này có hiệu lực trong <strong>5 phút</strong> kể từ khi được gửi.</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Security Note -->
+            <div class="security-note">
+                <p>🔒 <strong>Lưu ý bảo mật:</strong> Không chia sẻ mã OTP này với bất kỳ ai. Nhân viên E-Commerce sẽ không bao giờ yêu cầu mã OTP của bạn.</p>
+            </div>
+
+            <p class="info-text">
+                Nếu bạn không thực hiện yêu cầu đăng ký này, vui lòng bỏ qua email này.<br>
+                Tài khoản của bạn vẫn an toàn và không có thay đổi nào được thực hiện.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>E-Commerce</strong> - Nền tảng mua sắm trực tuyến</p>
+            <p>© 2026 E-Commerce. All rights reserved.</p>
+            <p>
+                <a href="#">Trung tâm trợ giúp</a> |
+                <a href="#">Chính sách bảo mật</a> |
+                <a href="#">Điều khoản sử dụng</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

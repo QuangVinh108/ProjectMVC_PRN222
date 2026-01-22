@@ -3,13 +3,53 @@ using BLL.Service;
 using DAL.Entities;
 using DAL.IRepository;
 using DAL.Repository;
+using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Collections;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "SMTP.env");
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    Console.WriteLine("✅ SMTP.env loaded");
+
+    // ✅ INJECT VÀO CONFIGURATION (QUAN TRỌNG!)
+    var envVars = new Dictionary<string, string>
+    {
+        ["EmailSettings:FromEmail"] = Environment.GetEnvironmentVariable("EmailSettings__FromEmail") ?? "",
+        ["EmailSettings:SmtpHost"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpHost") ?? "",
+        ["EmailSettings:SmtpPort"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPort") ?? "",
+        ["EmailSettings:SmtpUser"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpUser") ?? "",
+        ["EmailSettings:SmtpPass"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPass") ?? ""
+    };
+
+    foreach (var kvp in envVars)
+    {
+        if (!string.IsNullOrEmpty(kvp.Value))
+        {
+            builder.Configuration[kvp.Key] = kvp.Value;
+        }
+    }
+}
+else
+{
+    Console.WriteLine($"⚠️ SMTP.env not found at: {envPath}");
+}
+
+// ✅ DEBUG
+Console.WriteLine("=== CONFIG CHECK ===");
+Console.WriteLine($"FromEmail: {builder.Configuration["EmailSettings:FromEmail"]}");
+Console.WriteLine($"SmtpHost: {builder.Configuration["EmailSettings:SmtpHost"]}");
+Console.WriteLine($"SmtpUser: {builder.Configuration["EmailSettings:SmtpUser"]}");
+Console.WriteLine($"SmtpPass: {(builder.Configuration["EmailSettings:SmtpPass"]?.Length > 0 ? "***SET***" : "❌ EMPTY")}");
+Console.WriteLine("====================");
+
 
 builder.Services.AddHttpClient();
 // Add services to the container.
@@ -39,6 +79,10 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
