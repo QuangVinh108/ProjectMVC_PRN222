@@ -222,7 +222,7 @@ namespace BLL.Service
             try
             {
                 if (quantity <= 0)
-                    return GenericResult<bool>.Success(true); // 0 quantity luôn có stock
+                    return GenericResult<bool>.Success(true);
 
                 var hasStock = await _inventoryRepo.HasStockAsync(productId, quantity);
                 return GenericResult<bool>.Success(hasStock);
