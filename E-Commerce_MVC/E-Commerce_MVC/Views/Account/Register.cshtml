@@ -1,0 +1,257 @@
+﻿@model RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+
+<div class="login-container">
+    <div class="login-bg"></div>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-7">
+                <div class="card shadow login-card">
+                    <div class="card-body p-5">
+                        <h3 class="card-title text-center mb-4">Đăng Ký Tài Khoản</h3>
+
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                @TempData["ErrorMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                @TempData["SuccessMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        <p class="text-center text-muted mb-4">
+                            Tạo tài khoản mới để bắt đầu mua sắm
+                        </p>
+
+                        <form asp-action="Register" method="post" id="registerForm">
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                            }
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Username" class="form-label">
+                                        <i class="bi bi-person-fill me-1"></i>Tên tài khoản
+                                    </label>
+                                    <input asp-for="Username" class="form-control form-control-lg"
+                                           placeholder="Chọn tên tài khoản" autofocus />
+                                    <span asp-validation-for="Username" class="text-danger small"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Email" class="form-label">
+                                        <i class="bi bi-envelope-fill me-1"></i>Email
+                                    </label>
+                                    <div class="input-group">
+                                        <input asp-for="Email" type="email" class="form-control form-control-lg"
+                                               placeholder="email@example.com" id="emailInput" />
+                                        <button type="button" class="btn btn-outline-primary" id="sendOtpBtn">
+                                            <i class="bi bi-send me-1"></i>Gửi OTP
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="Email" class="text-danger small"></span>
+                                    <small id="otpStatus" class="text-muted"></small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" id="otpSection" style="display: none;">
+                                <label asp-for="OtpCode" class="form-label">
+                                    <i class="bi bi-shield-lock-fill me-1"></i>Mã OTP (6 số)
+                                </label>
+                                <input asp-for="OtpCode" maxlength="6" class="form-control form-control-lg"
+                                       placeholder="Nhập mã OTP từ email" />
+                                <span asp-validation-for="OtpCode" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="FullName" class="form-label">
+                                    <i class="bi bi-person-badge-fill me-1"></i>Họ và tên
+                                </label>
+                                <input asp-for="FullName" class="form-control form-control-lg"
+                                       placeholder="Nguyễn Văn A" />
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Password" class="form-label">
+                                        <i class="bi bi-lock-fill me-1"></i>Mật khẩu
+                                    </label>
+                                    <input asp-for="Password" type="password" class="form-control form-control-lg"
+                                           placeholder="Tối thiểu 6 ký tự" />
+                                    <span asp-validation-for="Password" class="text-danger small"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="ConfirmPassword" class="form-label">
+                                        <i class="bi bi-lock-fill me-1"></i>Xác nhận mật khẩu
+                                    </label>
+                                    <input asp-for="ConfirmPassword" type="password" class="form-control form-control-lg"
+                                           placeholder="Nhập lại mật khẩu" />
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                                <label class="form-check-label" for="agreeTerms">
+                                    Tôi đồng ý với <a href="#" class="fw-bold">Điều khoản dịch vụ</a> và <a href="#" class="fw-bold">Chính sách bảo mật</a>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                                <i class="bi bi-person-plus me-2"></i>Đăng ký
+                            </button>
+                        </form>
+
+                        <div class="position-relative my-4">
+                            <hr>
+                            <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted">
+                                hoặc
+                            </span>
+                        </div>
+
+                        <div id="g_id_onload"
+                             data-client_id="477307811776-7f6ptpobvega67l3cd6ghin732dntka2.apps.googleusercontent.com"
+                             data-context="signup"
+                             data-ux_mode="popup"
+                             data-callback="handleCredentialResponse"
+                             data-auto_prompt="false">
+                        </div>
+
+                        <div class="g_id_signin"
+                             data-type="standard"
+                             data-shape="rectangular"
+                             data-theme="outline"
+                             data-text="signup_with"
+                             data-size="large"
+                             data-logo_alignment="left">
+                        </div>
+
+                        <p class="text-center mt-3">
+                            Đã có tài khoản?
+                            <a asp-action="Login" class="text-decoration-none fw-bold">Đăng nhập ngay</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        const emailInput = document.getElementById('emailInput');
+        const otpStatus = document.getElementById('otpStatus');
+        const otpSection = document.getElementById('otpSection');
+
+        sendOtpBtn.addEventListener('click', async function () {
+            const email = emailInput.value;
+
+            if (!email || !email.includes('@@')) {
+                otpStatus.textContent = '❌ Vui lòng nhập email hợp lệ';
+                otpStatus.className = 'text-danger small d-block mt-1';
+                return;
+            }
+
+            sendOtpBtn.disabled = true;
+            sendOtpBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang gửi...';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                const response = await fetch('@Url.Action("SendOtp", "Account")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(email)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    otpStatus.textContent = '✅ ' + result.message;
+                    otpStatus.className = 'text-success small d-block mt-1';
+                    otpSection.style.display = 'block';
+
+                    let countdown = 60;
+                    const interval = setInterval(function () {
+                        sendOtpBtn.textContent = 'Gửi lại (' + countdown + 's)';
+                        countdown--;
+                        if (countdown < 0) {
+                            clearInterval(interval);
+                            sendOtpBtn.disabled = false;
+                            sendOtpBtn.innerHTML = '<i class="bi bi-send me-1"></i>Gửi lại OTP';
+                        }
+                    }, 1000);
+                } else {
+                    otpStatus.textContent = '❌ ' + result.message;
+                    otpStatus.className = 'text-danger small d-block mt-1';
+                    sendOtpBtn.disabled = false;
+                    sendOtpBtn.innerHTML = '<i class="bi bi-send me-1"></i>Gửi OTP';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                otpStatus.textContent = '❌ Lỗi kết nối';
+                otpStatus.className = 'text-danger small d-block mt-1';
+                sendOtpBtn.disabled = false;
+                sendOtpBtn.innerHTML = '<i class="bi bi-send me-1"></i>Gửi OTP';
+            }
+        });
+    });
+
+    function handleCredentialResponse(response) {
+        console.log("=== GOOGLE REGISTER ===");
+        const antiforgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '@Url.Action("GoogleLogin", "Account")';
+
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = '__RequestVerificationToken';
+        tokenInput.value = antiforgeryToken;
+        form.appendChild(tokenInput);
+
+        const idTokenInput = document.createElement('input');
+        idTokenInput.type = 'hidden';
+        idTokenInput.name = 'idToken';
+        idTokenInput.value = response.credential;
+        form.appendChild(idTokenInput);
+
+        const returnUrlInput = document.createElement('input');
+        returnUrlInput.type = 'hidden';
+        returnUrlInput.name = 'returnUrl';
+        returnUrlInput.value = '/Product';
+        form.appendChild(returnUrlInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
