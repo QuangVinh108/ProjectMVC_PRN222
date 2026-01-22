@@ -12,20 +12,31 @@ else if (!Model.CartItems.Any())
 }
 else
 {
-    <table class="table">
+    @* Single antiforgery token for JS *@
+    <div id="afToken" style="display:none;">
+        @Html.AntiForgeryToken()
+    </div>
+
+    <table class="table" style="table-layout: fixed; width: 100%;">
+        <colgroup>
+            <col style="width:25%;" />
+            <col style="width:25%;" />
+            <col style="width:25%;" />
+            <col style="width:25%;" />
+        </colgroup>
         <thead>
             <tr>
                 <th>Sản phẩm</th>
-                <th>Giá</th>
-                <th>Số lượng</th>
-                <th style="width:120px;">Hành động</th>
+                <th class="text-center">Giá</th>
+                <th class="text-center">Số lượng</th>
+                <th class="text-center" style="width:120px;">Hành động</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var item in Model.CartItems)
             {
                 <tr>
-                    <td>
+                    <td class="align-middle">
                         <div class="d-flex align-items-center">
                             @if (!string.IsNullOrEmpty(item.Image))
                             {
@@ -37,10 +48,11 @@ else
                             </div>
                         </div>
                     </td>
-                    <td>@item.UnitPrice.ToString("N0") ₫</td>
-                    <td>@item.Quantity</td>
-                    <td>
-                        <div class="d-flex gap-2">
+                    <td class="align-middle text-center">@item.UnitPrice.ToString("N0") ₫</td>
+                    @* visible quantity cell that we will update after AJAX success *@
+                    <td class="cart-qty-display align-middle text-center">@item.Quantity</td>
+                    <td class="align-middle text-center">
+                        <div class="d-flex gap-2 align-items-center justify-content-center">
                             <form asp-controller="Cart" asp-action="Remove" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?');" style="display:inline;">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="cartItemId" value="@item.CartItemId" />
@@ -49,18 +61,98 @@ else
                                 </button>
                             </form>
 
-                            <form asp-controller="Cart" asp-action="Update" method="post" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="cartItemId" value="@item.CartItemId" />
-                                <input type="number" name="quantity" value="@item.Quantity" min="1" class="form-control form-control-sm" style="width:70px;" />
-                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Cập nhật">
-                                    <i class="bi bi-arrow-repeat"></i>
-                                </button>
-                            </form>
+                            @* Inline numeric input — no submit button. JS will POST to Cart/Update *@
+                            <input type="number"
+                                   min="1"
+                                   value="@item.Quantity"
+                                   class="form-control form-control-sm cart-quantity-input"
+                                   style="width:70px;"
+                                   data-cartitemid="@item.CartItemId" />
                         </div>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+}
+@section Scripts {
+    <script>
+        (function () {
+            // small debounce helper
+            function debounce(fn, delay) {
+                let t;
+                return function () {
+                    const args = arguments;
+                    clearTimeout(t);
+                    t = setTimeout(function () { fn.apply(null, args); }, delay);
+                };
+            }
+
+            const tokenInput = document.querySelector('#afToken input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : null;
+            if (!token) return;
+
+            const inputs = document.querySelectorAll('.cart-quantity-input');
+            if (!inputs.length) return;
+
+            async function sendUpdate(cartItemId, quantity, inputEl) {
+                if (!cartItemId) return;
+                if (quantity < 1) {
+                    quantity = 1;
+                    inputEl.value = 1;
+                }
+
+                const fd = new FormData();
+                fd.append('cartItemId', cartItemId);
+                fd.append('quantity', quantity);
+                fd.append('__RequestVerificationToken', token);
+
+                try {
+                    const res = await fetch('@Url.Action("Update", "Cart")', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin',
+                        body: fd
+                    });
+
+                    if (!res.ok) throw new Error('Network error');
+
+                    const contentType = res.headers.get('content-type') || '';
+                    if (contentType.indexOf('application/json') !== -1) {
+                        const data = await res.json();
+                        if (data?.success) {
+                            // Update visible quantity cell in the same row
+                            const row = inputEl.closest('tr');
+                            const qtyCell = row.querySelector('.cart-qty-display');
+                            if (qtyCell) qtyCell.textContent = (data.quantity != null ? data.quantity : quantity);
+
+                            // Update cart badge if controller returned new count
+                            const badge = document.getElementById('cartBadge');
+                            if (badge && data.count != null) {
+                                badge.textContent = data.count;
+                                badge.style.display = (data.count > 0) ? 'block' : 'none';
+                            }
+                        } else {
+                            alert(data?.error ?? 'Không thể cập nhật số lượng');
+                        }
+                    } else {
+                        // Fallback: server returned HTML (non-AJAX) — reload to reflect changes
+                        location.reload();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Lỗi khi cập nhật giỏ hàng');
+                }
+            }
+
+            const handler = debounce(function (e) {
+                const input = e.target;
+                const cartItemId = input.dataset.cartitemid;
+                const qty = parseInt(input.value, 10) || 1;
+                sendUpdate(cartItemId, qty, input);
+            }, 600);
+
+            inputs.forEach(i => i.addEventListener('input', handler));
+        })();
+    </script>
 }

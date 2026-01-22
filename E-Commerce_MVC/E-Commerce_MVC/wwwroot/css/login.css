@@ -204,7 +204,7 @@
 }
 
 /* ===== DARK MODE ===== */
-@media (prefers-color-scheme: dark) {
+/*@media (prefers-color-scheme: dark) {
     .login-card {
         background: rgba(30, 30, 30, 0.95);
         color: #f3f4f6;
@@ -232,4 +232,4 @@
     .text-muted {
         color: #9ca3af;
     }
-}
+}*/
