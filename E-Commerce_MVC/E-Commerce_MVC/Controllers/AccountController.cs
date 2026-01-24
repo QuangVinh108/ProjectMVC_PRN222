@@ -389,5 +389,50 @@ namespace E_Commerce_MVC.Controllers
                 return View(model);
             }
         }
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
+        // 2. POST: Xử lý đổi mật khẩu
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                // Lấy UserId từ Cookie
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("Id");
+                int userId = int.Parse(userIdClaim);
+
+                // Gọi Service xử lý (Chúng ta sẽ viết hàm này ở Bước 4)
+                var result = await _userService.ChangePasswordAsync(userId, model.CurrentPassword, model.NewPassword);
+
+                if (result.Success)
+                {
+                    TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
+                    return RedirectToAction("Index", "Home"); // Hoặc về Home
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, result.Message); // Hiển thị lỗi từ Service (vd: Sai pass cũ)
+                    return View(model);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, "Lỗi hệ thống: " + ex.Message);
+                return View(model);
+            }
+        }
     }
 }
