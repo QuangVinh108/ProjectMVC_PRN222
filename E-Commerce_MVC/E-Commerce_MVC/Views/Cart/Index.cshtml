@@ -1,6 +1,11 @@
 ﻿@model DAL.Entities.Cart
 
-<h1>🛒 Giỏ hàng</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">🛒 Giỏ hàng</h1>
+    <a asp-controller="Order" asp-action="Index" class="btn btn-outline-primary">
+        <i class="bi bi-card-checklist me-1"></i> Đơn hàng
+    </a>
+</div>
 
 @if (Model == null)
 {
@@ -12,23 +17,210 @@ else if (!Model.CartItems.Any())
 }
 else
 {
-    <table class="table">
+    @* Single antiforgery token for JS *@
+    <div id="afToken" style="display:none;">
+        @Html.AntiForgeryToken()
+    </div>
+
+    <table class="table" style="table-layout: fixed; width: 100%;">
+        <colgroup>
+            <col style="width:25%;" />
+            <col style="width:25%;" />
+            <col style="width:25%;" />
+            <col style="width:25%;" />
+        </colgroup>
         <thead>
             <tr>
                 <th>Sản phẩm</th>
-                <th>Giá</th>
-                <th>Số lượng</th>
+                <th class="text-center">Giá</th>
+                <th class="text-center">Số lượng</th>
+                <th class="text-center" style="width:120px;">Hành động</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var item in Model.CartItems)
             {
                 <tr>
-                    <td>@item.Product.ProductName</td>
-                    <td>@item.UnitPrice</td>
-                    <td>@item.Quantity</td>
+                    <td class="align-middle">
+                        <div class="d-flex align-items-center">
+                            @if (!string.IsNullOrEmpty(item.Image))
+                            {
+                                <img src="@item.Image" alt="@item.Product.ProductName" style="width:60px; height:60px; object-fit:cover;" class="me-3 rounded" />
+                            }
+                            <div>
+                                <div class="fw-bold">@item.Product.ProductName</div>
+                                <div class="text-muted small">SKU: @(item.Product.Sku ?? "N/A")</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    @* Add data-unitprice using invariant format so JS can parse reliably *@
+                    <td class="align-middle text-center" data-unitprice="@(item.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                        @item.UnitPrice.ToString("N0") ₫
+                    </td>
+
+                    @* visible quantity cell that we will update after AJAX success *@
+                    <td class="cart-qty-display align-middle text-center">@item.Quantity</td>
+                    <td class="align-middle text-center">
+                        <div class="d-flex gap-2 align-items-center justify-content-center">
+                            <form asp-controller="Cart" asp-action="Remove" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?');" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="cartItemId" value="@item.CartItemId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+
+                            @* Inline numeric input — no submit button. JS will POST to Cart/Update *@
+                            <input type="number"
+                                   min="1"
+                                   value="@item.Quantity"
+                                   class="form-control form-control-sm cart-quantity-input"
+                                   style="width:70px;"
+                                   data-cartitemid="@item.CartItemId" />
+                        </div>
+                    </td>
                 </tr>
             }
         </tbody>
     </table>
+
+    @* Checkout summary and buttons (fixed: use inline expression to avoid nested @{ } inside @if/@else) *@
+    <div class="d-flex justify-content-end mt-3">
+        <div class="card" style="width:360px;">
+            <div class="card-body">
+                <p class="mb-2"><strong>Tổng tiền:</strong> <span id="cartTotal" class="text-danger fs-5">@((Model.CartItems.Sum(i => i.UnitPrice * i.Quantity)).ToString("N0")) ₫</span></p>
+                <p class="text-muted small mb-3">Phí vận chuyển và chi tiết thanh toán sẽ được chọn ở trang thanh toán.</p>
+                <div class="d-grid gap-2">
+                    <a asp-controller="Order" asp-action="Checkout" class="btn btn-success btn-lg">
+                        <i class="bi bi-credit-card"></i> Thanh toán
+                    </a>
+                    <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Tiếp tục mua sắm
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@section Scripts {
+    <script>
+        (function () {
+            // small debounce helper
+            function debounce(fn, delay) {
+                let t;
+                return function () {
+                    const args = arguments;
+                    clearTimeout(t);
+                    t = setTimeout(function () { fn.apply(null, args); }, delay);
+                };
+            }
+
+            // Format number with thousand separators (use en-US to match server "N0" output)
+            function formatNumber(n) {
+                return (n || 0).toLocaleString('en-US');
+            }
+
+            // Recalculate total from DOM (data-unitprice and quantity inputs / display)
+            function recalcTotal() {
+                const rows = document.querySelectorAll('table tbody tr');
+                let sum = 0;
+                rows.forEach(row => {
+                    const unitTd = row.querySelector('[data-unitprice]');
+                    if (!unitTd) return;
+                    // parse invariant decimal from attribute
+                    const unit = parseFloat(unitTd.getAttribute('data-unitprice').replace(',', '.')) || 0;
+
+                    const qtyInput = row.querySelector('.cart-quantity-input');
+                    const qtyDisplay = row.querySelector('.cart-qty-display');
+                    let qty = 0;
+                    if (qtyInput) {
+                        qty = parseInt(qtyInput.value, 10) || 0;
+                    } else if (qtyDisplay) {
+                        qty = parseInt(qtyDisplay.textContent.trim(), 10) || 0;
+                    }
+                    sum += unit * qty;
+                });
+
+                const totalEl = document.getElementById('cartTotal');
+                if (totalEl) {
+                    totalEl.textContent = formatNumber(sum) + ' ₫';
+                }
+            }
+
+            const tokenInput = document.querySelector('#afToken input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : null;
+            if (!token) return;
+
+            const inputs = document.querySelectorAll('.cart-quantity-input');
+            if (!inputs.length) return;
+
+            async function sendUpdate(cartItemId, quantity, inputEl) {
+                if (!cartItemId) return;
+                if (quantity < 1) {
+                    quantity = 1;
+                    inputEl.value = 1;
+                }
+
+                const fd = new FormData();
+                fd.append('cartItemId', cartItemId);
+                fd.append('quantity', quantity);
+                fd.append('__RequestVerificationToken', token);
+
+                try {
+                    const res = await fetch('@Url.Action("Update", "Cart")', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin',
+                        body: fd
+                    });
+
+                    if (!res.ok) throw new Error('Network error');
+
+                    const contentType = res.headers.get('content-type') || '';
+                    if (contentType.indexOf('application/json') !== -1) {
+                        const data = await res.json();
+                        if (data?.success) {
+                            // Update visible quantity cell in the same row
+                            const row = inputEl.closest('tr');
+                            const qtyCell = row.querySelector('.cart-qty-display');
+                            if (qtyCell) qtyCell.textContent = (data.quantity != null ? data.quantity : quantity);
+
+                            // Update cart badge if controller returned new count
+                            const badge = document.getElementById('cartBadge');
+                            if (badge && data.count != null) {
+                                badge.textContent = data.count;
+                                badge.style.display = (data.count > 0) ? 'block' : 'none';
+                            }
+
+                            // Recalculate total on page using DOM values
+                            recalcTotal();
+                        } else {
+                            alert(data?.error ?? 'Không thể cập nhật số lượng');
+                        }
+                    } else {
+                        // Fallback: server returned HTML (non-AJAX) — reload to reflect changes
+                        location.reload();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Lỗi khi cập nhật giỏ hàng');
+                }
+            }
+
+            const handler = debounce(function (e) {
+                const input = e.target;
+                const cartItemId = input.dataset.cartitemid;
+                const qty = parseInt(input.value, 10) || 1;
+                sendUpdate(cartItemId, qty, input);
+            }, 600);
+
+            inputs.forEach(i => i.addEventListener('input', handler));
+
+            // Ensure total is correct on initial load
+            document.addEventListener('DOMContentLoaded', recalcTotal, false);
+            // Also run immediately in case script loaded after DOMContentLoaded
+            recalcTotal();
+        })();
+    </script>
 }

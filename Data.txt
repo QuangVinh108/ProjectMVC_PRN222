@@ -10,9 +10,9 @@ GO
 
 -- 2. USERS (có GoogleId, EmailConfirmed...)
 INSERT INTO Users (RoleId, UserName, Email, PasswordHash, FullName, Phone, Address, IsActive, GoogleId, EmailConfirmed, LoginProvider) VALUES 
-(1, 'admin_sys', 'admin@store.com', '$2a$11$hashed_admin_pass', N'Quản Trị Viên', '0901234567', N'Hà Nội', 1, NULL, 1, 'Local'),
-(2, 'nguyenvana', 'nva@gmail.com', '$2a$11$hashed_user_pass', N'Nguyễn Văn A', '0912345678', N'TP. HCM', 1, NULL, 0, 'Local'),
-(2, 'tranthib', 'ttb@gmail.com', '$2a$11$hashed_user_pass2', N'Trần Thị B', '0987654321', N'Đà Nẵng', 1, 'google_123456', 1, 'Google'),
+(1, 'admin', 'admin@store.com', '$2a$12$EnCSBAU/9HLjBKcPRjWbQu3cKzwTzNCM7j.ncF55SbRBPlCxFwlcC', N'Quản Trị Viên', '0901234567', N'Hà Nội', 1, NULL, 1, 'Local'),
+(2, 'nguyenvana', 'nva@gmail.com', '$2a$12$EnCSBAU/9HLjBKcPRjWbQu3cKzwTzNCM7j.ncF55SbRBPlCxFwlcC', N'Nguyễn Văn A', '0912345678', N'TP. HCM', 1, NULL, 0, 'Local'),
+(3, 'tranthib', 'ttb@gmail.com', '$2a$12$EnCSBAU/9HLjBKcPRjWbQu3cKzwTzNCM7j.ncF55SbRBPlCxFwlcC', N'Trần Thị B', '0987654321', N'Đà Nẵng', 1, 'google_123456', 1, 'Google'),
 (2, 'lethic', 'ltc@gmail.com', '$2a$11$hashed_user_pass3', N'Lê Thị C', '0998887776', N'Cần Thơ', 0, NULL, 0, 'Local');
 GO
 

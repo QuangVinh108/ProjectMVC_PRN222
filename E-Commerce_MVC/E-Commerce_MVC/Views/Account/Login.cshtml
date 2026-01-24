@@ -3,90 +3,184 @@
     ViewData["Title"] = "Đăng nhập";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 
-<!-- Hero Background full screen -->
-<style>
-    .login-hero {
-        min-height: 100vh;
-        background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1920&auto=format&fit=crop');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        display: flex;
-        align-items: center;
-    }
+<div class="login-container">
+    <!-- Background image with overlay -->
+    <div class="login-bg"></div>
 
-    .login-card {
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        border: none;
-    }
-
-    .form-floating label {
-        color: #666;
-    }
-</style>
-
-<div class="login-hero">
-    <div class="container-fluid px-4 px-lg-5"> ← Fluid + padding đẹp
+    <div class="container mt-5">
         <div class="row justify-content-center">
-            <div class="col-lg-5 col-md-7">
-                <div class="login-card p-5">
-                    <div class="text-center mb-5">
-                        <h1 class="display-5 fw-bold text-primary mb-2">
-                            <i class="bi bi-shield-lock"></i> Đăng nhập
-                        </h1>
-                        <p class="text-muted">Vào tài khoản của bạn để tiếp tục mua sắm</p>
-                    </div>
+            <div class="col-md-6">
+                <div class="card shadow login-card">
+                    <div class="card-body p-5">
+                        <h3 class="card-title text-center mb-4">Đăng Nhập</h3>
 
-                    <form asp-action="Login" method="post">
-                        <input type="hidden" asp-for="ReturnUrl" />
-
-                        <div asp-validation-summary="All" class="alert alert-danger"></div>
-
-                        <div class="form-floating mb-4">
-                            <input asp-for="Username" class="form-control" id="username" placeholder="admin" />
-                            <label for="username">
-                                <i class="bi bi-person me-2"></i> @Html.DisplayNameFor(m => m.Username)
-                            </label>
-                            <span asp-validation-for="Username" class="text-danger"></span>
-                        </div>
-
-                        <div class="form-floating mb-4">
-                            <input asp-for="Password" class="form-control" type="password" id="password" placeholder="password" />
-                            <label for="password">
-                                <i class="bi bi-lock me-2"></i> @Html.DisplayNameFor(m => m.Password)
-                            </label>
-                            <span asp-validation-for="Password" class="text-danger"></span>
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="remember">
-                                <label class="form-check-label" for="remember">
-                                    Ghi nhớ đăng nhập
-                                </label>
+                        @* Hiển thị thông báo lỗi *@
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                @TempData["ErrorMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
-                            <a href="#" class="text-primary text-decoration-none">Quên mật khẩu?</a>
+                        }
+
+                        @* Hiển thị thông báo thành công *@
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                @TempData["SuccessMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        <p class="text-center text-muted mb-4">
+                            Vào tài khoản của bạn để tiếp tục mua sắm
+                        </p>
+
+                        <!-- Form đăng nhập thông thường -->
+                        <form asp-action="Login" method="post" id="loginForm">
+                            <input type="hidden" asp-for="ReturnUrl" />
+
+                            @* ✅ HIỂN THỊ LỖI VALIDATION - CHỈ HIỂN THỊ KHI CÓ LỖI *@
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div asp-validation-summary="All" class="alert alert-danger validation-error" role="alert"></div>
+                            }
+
+                            <div class="mb-3">
+                                <label asp-for="Username" class="form-label">
+                                    <i class="bi bi-person-fill me-1"></i>Tên tài khoản
+                                </label>
+                                <input asp-for="Username" class="form-control form-control-lg"
+                                       placeholder="Nhập tên tài khoản" autofocus />
+                                <span asp-validation-for="Username" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Password" class="form-label">
+                                    <i class="bi bi-lock-fill me-1"></i>Mật khẩu
+                                </label>
+                                <input asp-for="Password" type="password" class="form-control form-control-lg"
+                                       placeholder="Nhập mật khẩu" />
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập
+                            </button>
+                        </form>
+
+                        <!-- Phân cách OR -->
+                        <div class="position-relative my-4">
+                            <hr>
+                            <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted">
+                                hoặc
+                            </span>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-5 mb-3">
-                            <i class="bi bi-box-arrow-in-right me-2"></i> Đăng nhập
-                        </button>
+                        <!-- Google Sign-In Button -->
+                        <div class="d-flex justify-content-center w-100">
+                            <div id="g_id_onload"
+                                 data-client_id="477307811776-7f6ptpobvega67l3cd6ghin732dntka2.apps.googleusercontent.com"
+                                 data-context="signin"
+                                 data-ux_mode="popup"
+                                 data-callback="handleCredentialResponse"
+                                 data-auto_prompt="false">
+                            </div>
 
-                        <div class="text-center">
-                            <p class="mb-0 text-muted">Demo: <strong>admin</strong> / <strong>password</strong></p>
-                            <p class="text-muted">Chưa có tài khoản? <a asp-action="Register" class="text-primary fw-bold">Đăng ký ngay</a></p>
+                            <div class="g_id_signin"
+                                 data-type="standard"
+                                 data-shape="rectangular"
+                                 data-theme="outline"
+                                 data-text="signin_with"
+                                 data-size="large"
+                                 data-logo_alignment="left"
+                                 data-width="340"> </div>
                         </div>
-                    </form>
+
+                        <!-- Register link -->
+                        <p class="text-center mt-3">
+                            Chưa có tài khoản?
+                            <a asp-action="Register" class="text-decoration-none fw-bold">Đăng ký ngay</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Google Sign-In SDK -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+    // ✅ XÓA LỖI VALIDATION KHI RELOAD TRANG
+    window.addEventListener('load', function() {
+        // Kiểm tra nếu là page reload (F5 hoặc Ctrl+R)
+        if (performance.navigation.type === 1 || performance.getEntriesByType('navigation')[0]?.type === 'reload') {
+            // Xóa tất cả validation errors
+            const validationErrors = document.querySelectorAll('.validation-error, .field-validation-error');
+            validationErrors.forEach(el => el.remove());
+
+            // Reset form validation state
+            const form = document.getElementById('loginForm');
+            if (form) {
+                form.classList.remove('was-validated');
+            }
+        }
+
+        console.log("=== DEBUG INFO ===");
+        console.log("Client ID:", document.querySelector('[data-client_id]')?.getAttribute('data-client_id'));
+        console.log("Google SDK loaded:", typeof google !== 'undefined' ? '✅ YES' : '❌ NO');
+
+        if (typeof google === 'undefined') {
+            console.error('❌ Google Sign-In SDK failed to load');
+        }
+    });
+
+    function handleCredentialResponse(response) {
+        console.log("=== GOOGLE LOGIN SUCCESS ===");
+        console.log("Token length:", response.credential.length);
+
+        const antiforgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '@Url.Action("GoogleLogin", "Account")';
+
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = '__RequestVerificationToken';
+        tokenInput.value = antiforgeryToken;
+        form.appendChild(tokenInput);
+
+        const idTokenInput = document.createElement('input');
+        idTokenInput.type = 'hidden';
+        idTokenInput.name = 'idToken';
+        idTokenInput.value = response.credential;
+        form.appendChild(idTokenInput);
+
+        const returnUrlInput = document.createElement('input');
+        returnUrlInput.type = 'hidden';
+        returnUrlInput.name = 'returnUrl';
+        returnUrlInput.value = '@Model.ReturnUrl';
+        form.appendChild(returnUrlInput);
+
+        document.body.appendChild(form);
+        console.log("📤 Submitting to /Account/GoogleLogin...");
+        form.submit();
+    }
+</script>
+
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

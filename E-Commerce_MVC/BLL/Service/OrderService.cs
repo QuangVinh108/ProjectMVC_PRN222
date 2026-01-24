@@ -103,6 +103,27 @@ namespace BLL.Service
             if (!validStatuses.Contains(newStatus))
                 throw new Exception("Trạng thái không hợp lệ");
 
+            // If marking as Paid, update payment record as well (fake payment)
+            if (newStatus == "Paid")
+            {
+                if (order.Payment == null)
+                {
+                    // create a payment if missing (defensive)
+                    order.Payment = new Payment
+                    {
+                        PaymentMethod = "Unknown",
+                        Amount = order.TotalAmount,
+                        Status = "Paid",
+                        PaidAt = DateTime.Now
+                    };
+                }
+                else
+                {
+                    order.Payment.Status = "Paid";
+                    order.Payment.PaidAt = DateTime.Now;
+                }
+            }
+
             order.Status = newStatus;
             await _orderRepo.UpdateAsync(order);
             return true;
