@@ -28,7 +28,7 @@ namespace BLL.Service
     { "vnp_CurrCode", "VND" },
 
     // 🔥 SỬA NGAY DÒNG NÀY
-    { "vnp_TxnRef", $"{payment.OrderId}_{DateTime.Now:HHmmss}" },
+    { "vnp_TxnRef", $"{payment.OrderId}_{Guid.NewGuid():N}" },
 
     { "vnp_OrderInfo", $"Thanh_toan_don_hang_{payment.OrderId}" },
     { "vnp_OrderType", "other" },
