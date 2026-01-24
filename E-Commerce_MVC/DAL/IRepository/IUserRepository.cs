@@ -19,5 +19,19 @@ namespace DAL.IRepository
         Task AddUserAsync(User user);
         Task<User> GetUserByUserName(string username);
         User GetUserByEmail(string email);
+
+        // ===== FOR AUTHSERVICE =====
+
+        Task<User?> GetByIdWithRoleAsync(int userId);
+        Task<User?> GetByUsernameAsync(string username);
+        Task<User?> GetByEmailAsync(string email);
+        Task<Role?> GetRoleByNameAsync(string roleName);
+        Task SaveChangesAsync();
+
+        // ===== FOR EMAILVERIFICATIONSERVICE =====
+        Task<User?> GetByIdAsync(int userId);
+        Task<User?> FindVerifiedUserByEmailExcludingUserIdAsync(string email, int excludeUserId);
+        Task<User?> FindGoogleUserByEmailExcludingUserIdAsync(string email, int excludeUserId);
+
     }
 }

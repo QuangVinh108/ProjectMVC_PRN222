@@ -120,6 +120,51 @@ namespace E_Commerce_MVC.Controllers
             }
         }
 
+        // POST: /Order/Pay/5
+        // Payment action for customers to mark an order as Paid
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Pay(int id)
+        {
+            try
+            {
+                // Ensure order exists and belongs to current user
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (order == null)
+                {
+                    TempData["Error"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var userId = GetCurrentUserId();
+                if (order.UserId != userId)
+                {
+                    TempData["Error"] = "Bạn không có quyền thao tác trên đơn hàng này";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Only allow paying when pending
+                if (order.Status != "Pending")
+                {
+                    TempData["Error"] = "Chỉ có thể thanh toán đơn hàng ở trạng thái Chờ xử lý";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var result = await _orderService.UpdateOrderStatusAsync(id, "Paid");
+                if (result)
+                    TempData["Success"] = "Đã thanh toán thành công";
+                else
+                    TempData["Error"] = "Không thể cập nhật trạng thái thanh toán";
+
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
         private int GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

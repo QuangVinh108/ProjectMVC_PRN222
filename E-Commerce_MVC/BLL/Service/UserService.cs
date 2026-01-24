@@ -132,5 +132,33 @@ namespace BLL.Service
 
             _userRepository.UpdateUser(user);
         }
+        public async Task<(bool Success, string Message)> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+        {
+            // 1. Lấy user từ DB
+            var user = _userRepository.GetUserById(userId);
+            if (user == null) return (false, "Tài khoản không tồn tại.");
+
+            // 2. Nếu là tài khoản Google (không có password), chặn đổi pass
+            if (string.IsNullOrEmpty(user.PasswordHash))
+                return (false, "Tài khoản đăng nhập bằng Google không thể đổi mật khẩu.");
+
+            // 3. Kiểm tra mật khẩu cũ (Dùng BCrypt để verify)
+            // Lưu ý: Cần cài gói NuGet: BCrypt.Net-Next
+            bool isCorrect = BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash);
+
+            if (!isCorrect)
+            {
+                return (false, "Mật khẩu hiện tại không chính xác.");
+            }
+
+            // 4. Mã hóa mật khẩu mới
+            string newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+            // 5. Cập nhật và lưu
+            user.PasswordHash = newHash;
+            _userRepository.UpdateUser(user);
+
+            return (true, "Đổi mật khẩu thành công.");
+        }
     }
 }

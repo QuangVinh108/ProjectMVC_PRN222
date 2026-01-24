@@ -53,7 +53,8 @@ namespace BLL.Service
                 OrderDate = DateTime.Now,
                 Status = "Pending",
                 TotalAmount = totalAmount,
-                Note = dto.Note
+                Note = dto.Note,
+                IsActive = true
             };
 
             // 4. Create OrderItems from CartItems
@@ -61,7 +62,8 @@ namespace BLL.Service
             {
                 ProductId = ci.ProductId,
                 Quantity = ci.Quantity,
-                UnitPrice = ci.UnitPrice
+                UnitPrice = ci.UnitPrice,
+                Image = ci.Product?.Image
             }).ToList();
 
             // 5. Create Payment record
@@ -102,6 +104,27 @@ namespace BLL.Service
             var validStatuses = new[] { "Pending", "Paid", "Shipped", "Delivered", "Cancelled" };
             if (!validStatuses.Contains(newStatus))
                 throw new Exception("Trạng thái không hợp lệ");
+
+            // If marking as Paid, update payment record as well (fake payment)
+            if (newStatus == "Paid")
+            {
+                if (order.Payment == null)
+                {
+                    // create a payment if missing (defensive)
+                    order.Payment = new Payment
+                    {
+                        PaymentMethod = "Unknown",
+                        Amount = order.TotalAmount,
+                        Status = "Paid",
+                        PaidAt = DateTime.Now
+                    };
+                }
+                else
+                {
+                    order.Payment.Status = "Paid";
+                    order.Payment.PaidAt = DateTime.Now;
+                }
+            }
 
             order.Status = newStatus;
             await _orderRepo.UpdateAsync(order);
