@@ -1,6 +1,7 @@
 ﻿using BLL.DTOs;
 using BLL.IService;
 using DAL.Entities;
+using DAL.IRepository;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -13,16 +14,21 @@ namespace BLL.Service
 {
     public class EmailVerificationService : IEmailVerificationService
     {
-        private readonly ShopDbContext _context;
+        private readonly IUserRepository _userRepository;
+        private readonly IEmailVerificationTokenRepository _tokenRepository;
 
-        public EmailVerificationService(ShopDbContext context)
+        public EmailVerificationService(
+            IUserRepository userRepository,
+            IEmailVerificationTokenRepository tokenRepository)
         {
-            _context = context;
+            _userRepository = userRepository;
+            _tokenRepository = tokenRepository;
         }
 
         public async Task<VerificationResult> SendVerificationEmailAsync(int userId, string email)
         {
-            var user = await _context.Users.FindAsync(userId);
+            // Kiểm tra user tồn tại qua repository
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
                 return new VerificationResult
@@ -32,12 +38,9 @@ namespace BLL.Service
                 };
             }
 
-            // TRƯỜNG HỢP 3
-            var existingGoogleUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email
-                                       && u.GoogleId != null
-                                       && u.EmailConfirmed
-                                       && u.UserId != userId);
+            // TRƯỜNG HỢP 3: Check email đã dùng bởi Google account
+            var existingGoogleUser = await _userRepository
+                .FindGoogleUserByEmailExcludingUserIdAsync(email, userId);
 
             if (existingGoogleUser != null)
             {
@@ -50,10 +53,9 @@ namespace BLL.Service
                 };
             }
 
-            var existingVerifiedUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email
-                                       && u.EmailConfirmed
-                                       && u.UserId != userId);
+            // Check email đã được verified bởi user khác
+            var existingVerifiedUser = await _userRepository
+                .FindVerifiedUserByEmailExcludingUserIdAsync(email, userId);
 
             if (existingVerifiedUser != null)
             {
@@ -66,6 +68,7 @@ namespace BLL.Service
                 };
             }
 
+            // Generate token và lưu qua repository
             var token = GenerateSecureToken();
             var verificationToken = new EmailVerificationToken
             {
@@ -77,8 +80,8 @@ namespace BLL.Service
                 IsUsed = false
             };
 
-            _context.EmailVerificationTokens.Add(verificationToken);
-            await _context.SaveChangesAsync();
+            await _tokenRepository.AddAsync(verificationToken);
+            await _tokenRepository.SaveChangesAsync();
 
             return new VerificationResult
             {
@@ -89,9 +92,8 @@ namespace BLL.Service
 
         public async Task<VerificationResult> VerifyEmailTokenAsync(string token)
         {
-            var verificationToken = await _context.EmailVerificationTokens
-                .Include(vt => vt.User)
-                .FirstOrDefaultAsync(vt => vt.Token == token);
+            // Lấy token với user qua repository
+            var verificationToken = await _tokenRepository.GetByTokenWithUserAsync(token);
 
             if (verificationToken == null)
             {
@@ -103,6 +105,7 @@ namespace BLL.Service
                 };
             }
 
+            // Validate token
             if (verificationToken.IsUsed)
             {
                 return new VerificationResult
@@ -123,17 +126,16 @@ namespace BLL.Service
                 };
             }
 
-            // TRƯỜNG HỢP 3 check lại
-            var conflictGoogleUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == verificationToken.Email
-                                       && u.GoogleId != null
-                                       && u.EmailConfirmed
-                                       && u.UserId != verificationToken.UserId);
+            // TRƯỜNG HỢP 3: Check lại conflict với Google account
+            var conflictGoogleUser = await _userRepository
+                .FindGoogleUserByEmailExcludingUserIdAsync(
+                    verificationToken.Email,
+                    verificationToken.UserId);
 
             if (conflictGoogleUser != null)
             {
                 verificationToken.IsUsed = true;
-                await _context.SaveChangesAsync();
+                await _tokenRepository.SaveChangesAsync();
 
                 return new VerificationResult
                 {
@@ -144,6 +146,7 @@ namespace BLL.Service
                 };
             }
 
+            // Update user email và confirm status
             var user = verificationToken.User;
             if (user != null)
             {
@@ -151,7 +154,8 @@ namespace BLL.Service
                 user.EmailConfirmed = true;
                 user.EmailConfirmedAt = DateTime.UtcNow;
                 verificationToken.IsUsed = true;
-                await _context.SaveChangesAsync();
+
+                await _userRepository.SaveChangesAsync();
 
                 return new VerificationResult
                 {
