@@ -53,7 +53,8 @@ namespace BLL.Service
                 OrderDate = DateTime.Now,
                 Status = "Pending",
                 TotalAmount = totalAmount,
-                Note = dto.Note
+                Note = dto.Note,
+                IsActive = true
             };
 
             // 4. Create OrderItems from CartItems
@@ -61,7 +62,8 @@ namespace BLL.Service
             {
                 ProductId = ci.ProductId,
                 Quantity = ci.Quantity,
-                UnitPrice = ci.UnitPrice
+                UnitPrice = ci.UnitPrice,
+                Image = ci.Product?.Image
             }).ToList();
 
             // 5. Create Payment record
