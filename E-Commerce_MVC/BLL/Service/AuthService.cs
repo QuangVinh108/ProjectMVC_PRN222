@@ -27,10 +27,10 @@ namespace BLL.Service
             _jwtService = jwtService;
         }
 
-        public async Task<(string? accessToken, string? refreshToken)> LoginAsync(string username, string password)
+        public async Task<(string? accessToken, string? refreshToken, string? role)> LoginAsync(string username, string password)
         {
             var user = await _userRepository.AuthenticateAsync(username, password);
-            if (user == null) return (null, null);
+            if (user == null) return (null, null, null); // ← Thêm null cho role
 
             // Revoke old refresh tokens via repository
             await _refreshTokenRepository.RevokeAllUserTokensAsync(user.UserId);
@@ -43,10 +43,13 @@ namespace BLL.Service
             await _refreshTokenRepository.AddAsync(refreshToken);
             await _refreshTokenRepository.SaveChangesAsync();
 
-            Console.WriteLine($"✅ Tokens generated for UserId: {user.UserId}");
+            Console.WriteLine($"✅ Tokens generated for UserId: {user.UserId}, Role: {user.Role?.RoleName}");
 
-            return (accessToken, refreshTokenString);
+            // ✅ Trả về cả role name
+            return (accessToken, refreshTokenString, user.Role?.RoleName);
         }
+
+
 
         public async Task<(string? accessToken, string? refreshToken)?> RefreshTokenAsync(string refreshToken)
         {
