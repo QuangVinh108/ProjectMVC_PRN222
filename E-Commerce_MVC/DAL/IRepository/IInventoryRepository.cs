@@ -16,5 +16,14 @@ namespace DAL.IRepository
         Task<Inventory> CreateAsync(Inventory inventory);
         Task<Inventory?> UpdateAsync(Inventory inventory);
         Task<bool> DeleteAsync(int productId);
+        Task<(IList<Inventory> Items, int TotalCount)> GetPagedAsync(
+            string? search,
+            string sortBy,
+            bool isDescending,
+            int pageIndex,
+            int pageSize);
+
+        Task<int> GetQuantityAsync(int productId);
+        
     }
 }
