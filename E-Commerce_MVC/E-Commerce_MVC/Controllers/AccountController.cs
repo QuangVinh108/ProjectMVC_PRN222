@@ -1,13 +1,15 @@
 ﻿using Azure;
 using Azure.Core;
 using BLL.DTOs;
+using BLL.Helper;
 using BLL.Helpers;
 using BLL.IService;
 using E_Commerce_MVC.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Security.Claims;
 
 namespace E_Commerce_MVC.Controllers
 {
@@ -18,18 +20,24 @@ namespace E_Commerce_MVC.Controllers
         private readonly IGoogleAuthService _googleAuthService;
         private readonly IHttpClientFactory _httpClient;
         private readonly IEmailService _emailService; //EMAIL SERVICE
+        private readonly GeminiHelper _geminiHelper;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
         public AccountController(IAuthService authService,
             IUserService userService, 
             IGoogleAuthService googleAuthService,
             IHttpClientFactory httpClient,
-            IEmailService emailService)
+            IEmailService emailService,
+            GeminiHelper geminiHelper,          
+            IWebHostEnvironment webHostEnvironment)
         {
             _authService = authService;
             _userService = userService;
             _googleAuthService = googleAuthService;
             _httpClient = httpClient;
             _emailService = emailService;
+            _geminiHelper = geminiHelper;       
+            _webHostEnvironment = webHostEnvironment; 
         }       
 
         // ==================== LOGIN ====================
@@ -225,6 +233,8 @@ namespace E_Commerce_MVC.Controllers
             var user = _userService.GetUserById(userId);
             if (user == null) 
                 return NotFound();
+
+            ViewBag.IsVerified = user.IsIdentityVerified;
 
             // 3. Map sang ViewModel để hiển thị lên form
             var model = new UpdateProfileViewModel
@@ -434,5 +444,134 @@ namespace E_Commerce_MVC.Controllers
                 return View(model);
             }
         }
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult VerifyIdentity()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("Id");
+            int userId = int.Parse(userIdClaim);
+            var user = _userService.GetUserById(userId);
+
+            // Nếu đã xác thực rồi -> chặn
+            if (user.IsIdentityVerified) return RedirectToAction("Profile");
+
+            // Load thông tin hiện tại của User lên form để họ sửa nếu cần
+            var model = new EkycRequestViewModel
+            {
+                FullName = user.FullName,
+                CccdNumber = user.CccdNumber,
+                Address = user.Address,
+                DateOfBirth = user.DateOfBirth ?? DateTime.Today // Mặc định nếu chưa có
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyIdentity(EkycRequestViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            try
+            {
+                // 1. Gọi AI phân tích ảnh
+                var aiResult = await _geminiHelper.AnalyzeIdCardAsync(model.FrontImage);
+
+                if (aiResult == null)
+                {
+                    ModelState.AddModelError("", "Lỗi kết nối AI. Vui lòng thử lại.");
+                    return View(model);
+                }
+
+                if (!aiResult.IsValid)
+                {
+                    ModelState.AddModelError("", $"Ảnh không hợp lệ: {aiResult.Reason}");
+                    return View(model);
+                }
+
+                // ========================================================
+                // 2. LOGIC MATCHING (SO SÁNH THÔNG TIN) - PHẦN BẠN CẦN
+                // ========================================================
+
+                // 2.1. So khớp Số CCCD (Phải giống tuyệt đối)
+                if (model.CccdNumber.Trim() != aiResult.Data.IdNumber.Trim())
+                {
+                    ModelState.AddModelError("CccdNumber", $"Số CCCD bạn nhập ({model.CccdNumber}) không khớp với ảnh ({aiResult.Data.IdNumber}).");
+                    return View(model);
+                }
+
+                // 2.2. So khớp Họ tên (Dùng Helper để so sánh tương đối: bỏ dấu, chữ thường)
+                string inputName = StringHelper.NormalizeString(model.FullName);
+                string aiName = StringHelper.NormalizeString(aiResult.Data.FullName);
+
+                // Chấp nhận sai khác nhỏ hoặc bắt buộc chính xác 100% tùy bạn.
+                // Ở đây tôi dùng Contains hoặc so sánh bằng
+                if (inputName != aiName)
+                {
+                    ModelState.AddModelError("FullName", $"Họ tên nhập vào không khớp với trên thẻ.\nNhập: {model.FullName}\nThẻ: {aiResult.Data.FullName}");
+                    return View(model);
+                }
+
+                // 2.3. So khớp Ngày sinh
+                if (!StringHelper.CompareDates(model.DateOfBirth, aiResult.Data.Dob))
+                {
+                    ModelState.AddModelError("DateOfBirth", $"Ngày sinh không khớp. Trên thẻ là: {aiResult.Data.Dob}");
+                    return View(model);
+                }
+
+                // ========================================================
+                // 3. NẾU KHỚP HẾT -> TIẾN HÀNH NÂNG CẤP USER
+                // ========================================================
+
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("Id");
+                int userId = int.Parse(userIdClaim);
+                var user = _userService.GetUserById(userId);
+
+                // Lưu ảnh
+                string uniqueFileName = $"KYC_{userId}_{Guid.NewGuid()}_{Path.GetExtension(model.FrontImage.FileName)}";
+
+                // 1. Xác định đường dẫn thư mục chứa ảnh
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "kyc");
+
+                // === 🔥 QUAN TRỌNG: THÊM ĐOẠN NÀY ĐỂ SỬA LỖI 🔥 ===
+                // Kiểm tra nếu thư mục chưa tồn tại thì tạo mới
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+                // ===================================================
+
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await model.FrontImage.CopyToAsync(stream);
+                }
+
+                // Cập nhật thông tin (Ưu tiên lấy thông tin từ AI để chuẩn hóa dữ liệu lưu vào DB)
+                user.CccdNumber = aiResult.Data.IdNumber;
+                user.FullName = aiResult.Data.FullName; // Lấy tên in hoa từ thẻ cho đẹp
+                user.DateOfBirth = model.DateOfBirth;
+                user.Address = aiResult.Data.Address; // Địa chỉ lấy từ thẻ luôn cho chính xác
+                user.CccdFrontImage = "/images/kyc/" + uniqueFileName;
+
+                // Nâng cấp trạng thái
+                user.IsIdentityVerified = true;
+                user.IdentityRejectReason = null;
+
+                _userService.UpdateUser(user);
+
+                TempData["SuccessMessage"] = "Xác thực thành công! Thông tin đã được đối chiếu và cập nhật.";
+                return RedirectToAction("Profile");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Lỗi hệ thống: " + ex.Message);
+                return View(model);
+            }
+        }   
     }
 }

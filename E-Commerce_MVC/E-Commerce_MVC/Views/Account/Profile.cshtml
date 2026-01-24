@@ -15,12 +15,54 @@
                     </a>
                 </div>
                 <div class="card-body p-4">
+
+                    <div class="alert @(Model.IsIdentityVerified ? "alert-success" : "alert-warning") d-flex align-items-center mb-4">
+                        <i class="bi @(Model.IsIdentityVerified ? "bi-patch-check-fill" : "bi-exclamation-triangle-fill") fs-4 me-3"></i>
+                        <div>
+                            @if (Model.IsIdentityVerified)
+                            {
+                                <h5 class="alert-heading mb-0 fw-bold">Tài khoản đã xác thực (eKYC)</h5>
+                                <small>Thông tin của bạn đã được đối chiếu với CCCD.</small>
+                            }
+                            else
+                            {
+                                <h5 class="alert-heading mb-1 fw-bold">Chưa xác thực danh tính</h5>
+                                <p class="mb-0 small">Vui lòng xác thực CCCD để nâng cao bảo mật và hưởng quyền lợi.</p>
+                                <a asp-action="VerifyIdentity" class="btn btn-sm btn-warning mt-2 fw-bold">
+                                    <i class="bi bi-shield-lock"></i> Xác thực ngay
+                                </a>
+                            }
+                        </div>
+                    </div>
                     <div class="row mb-3 align-items-center">
                         <label class="col-sm-3 fw-bold text-muted">Họ và tên:</label>
                         <div class="col-sm-9">
-                            <p class="form-control-plaintext fw-bold fs-5 mb-0">@Model.FullName</p>
+                            <p class="form-control-plaintext fw-bold fs-5 mb-0">
+                                @Model.FullName
+                                @if (Model.IsIdentityVerified)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success" title="Đã xác thực"></i>
+                                }
+                            </p>
                         </div>
                     </div>
+
+                    @if (Model.IsIdentityVerified)
+                    {
+                        <div class="row mb-3 align-items-center">
+                            <label class="col-sm-3 fw-bold text-muted">Số CCCD:</label>
+                            <div class="col-sm-9">
+                                <p class="form-control-plaintext mb-0">@Model.CccdNumber</p>
+                            </div>
+                        </div>
+                        <div class="row mb-3 align-items-center">
+                            <label class="col-sm-3 fw-bold text-muted">Ngày sinh:</label>
+                            <div class="col-sm-9">
+                                <p class="form-control-plaintext mb-0">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "N/A")</p>
+                            </div>
+                        </div>
+                    }
+
                     <div class="row mb-3 align-items-center">
                         <label class="col-sm-3 fw-bold text-muted">Email:</label>
                         <div class="col-sm-9">

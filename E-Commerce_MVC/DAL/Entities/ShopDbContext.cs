@@ -55,11 +55,11 @@ public partial class ShopDbContext : DbContext
     {
         modelBuilder.Entity<Cart>(entity =>
         {
-            entity.HasKey(e => e.CartId).HasName("PK__Cart__51BCD7B74CBF1850");
+            entity.HasKey(e => e.CartId).HasName("PK__Cart__51BCD7B75DF4C592");
 
             entity.ToTable("Cart");
 
-            entity.HasIndex(e => e.UserId, "UQ__Cart__1788CC4D6AD6F902").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Cart__1788CC4D6F4A5511").IsUnique();
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
@@ -72,7 +72,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<CartItem>(entity =>
         {
-            entity.HasKey(e => e.CartItemId).HasName("PK__CartItem__488B0B0A945237A0");
+            entity.HasKey(e => e.CartItemId).HasName("PK__CartItem__488B0B0AAC37E8E5");
 
             entity.ToTable("CartItem");
 
@@ -93,7 +93,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A0B4446B40B");
+            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A0BDD1B4594");
 
             entity.Property(e => e.CategoryName).HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(255);
@@ -106,7 +106,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<EmailVerificationToken>(entity =>
         {
-            entity.HasKey(e => e.TokenId).HasName("PK__EmailVer__658FEEEA08040873");
+            entity.HasKey(e => e.TokenId).HasName("PK__EmailVer__658FEEEA0C79BD43");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.Email).HasMaxLength(100);
@@ -120,9 +120,9 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Inventory>(entity =>
         {
-            entity.HasKey(e => e.InventoryId).HasName("PK__Inventor__F5FDE6B3684692A1");
+            entity.HasKey(e => e.InventoryId).HasName("PK__Inventor__F5FDE6B314FBF8A8");
 
-            entity.HasIndex(e => e.ProductId, "UQ__Inventor__B40CC6CC462A7ED9").IsUnique();
+            entity.HasIndex(e => e.ProductId, "UQ__Inventor__B40CC6CCAFC07398").IsUnique();
 
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.Warehouse).HasMaxLength(100);
@@ -135,7 +135,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Order>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__Orders__C3905BCF8802654A");
+            entity.HasKey(e => e.OrderId).HasName("PK__Orders__C3905BCFAEF8EF21");
 
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Note).HasMaxLength(255);
@@ -151,7 +151,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<OrderItem>(entity =>
         {
-            entity.HasKey(e => e.OrderItemId).HasName("PK__OrderIte__57ED06816746681F");
+            entity.HasKey(e => e.OrderItemId).HasName("PK__OrderIte__57ED0681E1B8B662");
 
             entity.Property(e => e.Image).HasMaxLength(500);
             entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
@@ -169,9 +169,9 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A389CA22745");
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A387E81FC72");
 
-            entity.HasIndex(e => e.OrderId, "UQ__Payments__C3905BCEA26043CB").IsUnique();
+            entity.HasIndex(e => e.OrderId, "UQ__Payments__C3905BCE10F148BD").IsUnique();
 
             entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.PaymentMethod).HasMaxLength(50);
@@ -185,11 +185,12 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__Products__B40CC6CDE1AEC5E4");
+            entity.HasKey(e => e.ProductId).HasName("PK__Products__B40CC6CD45C14653");
 
-            entity.HasIndex(e => e.Sku, "UQ__Products__CA1ECF0D9B4FD1B6").IsUnique();
+            entity.HasIndex(e => e.Sku, "UQ__Products__CA1ECF0DF221B4D2").IsUnique();
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.Image).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.ProductName).HasMaxLength(150);
@@ -197,7 +198,6 @@ public partial class ShopDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("SKU");
             entity.Property(e => e.Status).HasDefaultValue((byte)1);
-            entity.Property(e => e.Image).HasMaxLength(500);
 
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)
@@ -207,7 +207,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<RefreshToken>(entity =>
         {
-            entity.HasKey(e => e.RefreshTokenId).HasName("PK__RefreshT__F5845E3942A896D7");
+            entity.HasKey(e => e.RefreshTokenId).HasName("PK__RefreshT__F5845E39AB6A0BE2");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.ReplacedByToken).HasMaxLength(255);
@@ -221,7 +221,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Review>(entity =>
         {
-            entity.HasKey(e => e.ReviewId).HasName("PK__Reviews__74BC79CECBE95EC5");
+            entity.HasKey(e => e.ReviewId).HasName("PK__Reviews__74BC79CE974D5FBA");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
@@ -239,7 +239,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE1AE3E376E6");
+            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE1A6B3395E4");
 
             entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
@@ -248,11 +248,11 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Shipping>(entity =>
         {
-            entity.HasKey(e => e.ShippingId).HasName("PK__Shipping__5FACD5809AC33DDA");
+            entity.HasKey(e => e.ShippingId).HasName("PK__Shipping__5FACD58071E3A60C");
 
             entity.ToTable("Shipping");
 
-            entity.HasIndex(e => e.OrderId, "UQ__Shipping__C3905BCEA8E2BA06").IsUnique();
+            entity.HasIndex(e => e.OrderId, "UQ__Shipping__C3905BCE4107F5B5").IsUnique();
 
             entity.Property(e => e.Address).HasMaxLength(255);
             entity.Property(e => e.Carrier).HasMaxLength(50);
@@ -269,17 +269,20 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4CED2B70D0");
+            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4CC9A08767");
 
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D1053440FE083A").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Users__A9D105342B683BBB").IsUnique();
 
-            entity.HasIndex(e => e.UserName, "UQ__Users__C9F28456F3E06123").IsUnique();
+            entity.HasIndex(e => e.UserName, "UQ__Users__C9F284567F9C16BC").IsUnique();
 
             entity.Property(e => e.Address).HasMaxLength(255);
+            entity.Property(e => e.CccdFrontImage).HasMaxLength(500);
+            entity.Property(e => e.CccdNumber).HasMaxLength(50);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.FullName).HasMaxLength(100);
             entity.Property(e => e.GoogleId).HasMaxLength(255);
+            entity.Property(e => e.IdentityRejectReason).HasMaxLength(255);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.LoginProvider)
                 .HasMaxLength(50)
@@ -296,11 +299,11 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<Wishlist>(entity =>
         {
-            entity.HasKey(e => e.WishlistId).HasName("PK__Wishlist__233189EB9141216D");
+            entity.HasKey(e => e.WishlistId).HasName("PK__Wishlist__233189EBF0D24344");
 
             entity.ToTable("Wishlist");
 
-            entity.HasIndex(e => e.UserId, "UQ__Wishlist__1788CC4DC5EFDD93").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Wishlist__1788CC4DCDFAE5D6").IsUnique();
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
 
@@ -312,7 +315,7 @@ public partial class ShopDbContext : DbContext
 
         modelBuilder.Entity<WishlistProduct>(entity =>
         {
-            entity.HasKey(e => e.WishlistProductId).HasName("PK__Wishlist__56CBB39CB90CE1AA");
+            entity.HasKey(e => e.WishlistProductId).HasName("PK__Wishlist__56CBB39CC4E3A8F9");
 
             entity.ToTable("WishlistProduct");
 

@@ -33,6 +33,16 @@ public partial class User
 
     public string? LoginProvider { get; set; }
 
+    public string? CccdNumber { get; set; }
+
+    public DateTime? DateOfBirth { get; set; }
+
+    public string? CccdFrontImage { get; set; }
+
+    public bool IsIdentityVerified { get; set; }
+
+    public string? IdentityRejectReason { get; set; }
+
     public virtual Cart? Cart { get; set; }
 
     public virtual ICollection<EmailVerificationToken> EmailVerificationTokens { get; set; } = new List<EmailVerificationToken>();
