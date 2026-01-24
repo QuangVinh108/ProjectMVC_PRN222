@@ -3,6 +3,12 @@
 bin/
 obj/
 
+# Environment variables
+.env
+.env.local  
+.env.development
+.env.production
+
 # Rider / VS Code
 .idea/
 .vscode/
