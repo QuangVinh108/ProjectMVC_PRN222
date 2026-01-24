@@ -1,4 +1,5 @@
 ﻿using BLL.DTOs;
+using BLL.Helper;
 using BLL.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +13,14 @@ namespace E_Commerce_MVC.Controllers
         private readonly IProductService _productService;
         private readonly ICategoryService _categoryService;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly GeminiHelper _geminiHelper;
 
-        public ProductController(IProductService productService, ICategoryService categoryService, IWebHostEnvironment webHostEnvironment)
+        public ProductController(IProductService productService, ICategoryService categoryService, IWebHostEnvironment webHostEnvironment, GeminiHelper geminiHelper)
         {
             _productService = productService;
             _categoryService = categoryService;
             _webHostEnvironment = webHostEnvironment;
+            _geminiHelper = geminiHelper;
         }
 
         public IActionResult Index()
@@ -164,6 +167,22 @@ namespace E_Commerce_MVC.Controllers
         {
             _productService.Delete(id);
             return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AnalyzeProductImage(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { success = false, message = "Vui lòng chọn ảnh" });
+
+            var result = await _geminiHelper.AnalyzeImageAsync(file);
+
+            if (result != null)
+            {
+                return Ok(new { success = true, data = result });
+            }
+
+            return BadRequest(new { success = false, message = "Không thể phân tích ảnh" });
         }
     }
 }

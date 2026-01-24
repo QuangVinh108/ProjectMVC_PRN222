@@ -1,4 +1,5 @@
-﻿using BLL.IService;
+﻿using BLL.Helper;
+using BLL.IService;
 using BLL.Service;
 using DAL.Entities;
 using DAL.IRepository;
@@ -14,45 +15,62 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var envPath = Path.Combine(Directory.GetCurrentDirectory(), "SMTP.env");
-if (File.Exists(envPath))
-{
-    Env.Load(envPath);
-    Console.WriteLine("✅ SMTP.env loaded");
+Env.Load();
 
-    // ✅ INJECT VÀO CONFIGURATION (QUAN TRỌNG!)
-    var envVars = new Dictionary<string, string>
-    {
-        ["EmailSettings:FromEmail"] = Environment.GetEnvironmentVariable("EmailSettings__FromEmail") ?? "",
-        ["EmailSettings:SmtpHost"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpHost") ?? "",
-        ["EmailSettings:SmtpPort"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPort") ?? "",
-        ["EmailSettings:SmtpUser"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpUser") ?? "",
-        ["EmailSettings:SmtpPass"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPass") ?? ""
-    };
+builder.Configuration.AddEnvironmentVariables();
 
-    foreach (var kvp in envVars)
-    {
-        if (!string.IsNullOrEmpty(kvp.Value))
-        {
-            builder.Configuration[kvp.Key] = kvp.Value;
-        }
-    }
-}
-else
+// DEBUG: Kiểm tra xem đã nhận được chưa (Chỉ chạy khi Dev)
+if (builder.Environment.IsDevelopment())
 {
-    Console.WriteLine($"⚠️ SMTP.env not found at: {envPath}");
+    Console.WriteLine("=== ENV LOAD CHECK ===");
+    Console.WriteLine($"DB Connected: {!string.IsNullOrEmpty(builder.Configuration.GetConnectionString("DefaultConnection"))}");
+    Console.WriteLine($"JWT Token Loaded: {!string.IsNullOrEmpty(builder.Configuration["Jwt:Token"])}");
+    Console.WriteLine($"Gemini Key Loaded: {!string.IsNullOrEmpty(builder.Configuration["Gemini:ApiKey"])}");
+    Console.WriteLine($"Email Configured: {!string.IsNullOrEmpty(builder.Configuration["EmailSettings:SmtpPass"])}");
+    Console.WriteLine("======================");
 }
+
+//var envPath = Path.Combine(Directory.GetCurrentDirectory(), "SMTP.env");
+//if (File.Exists(envPath))
+//{
+//    Env.Load(envPath);
+//    Console.WriteLine("✅ SMTP.env loaded");
+
+//    // ✅ INJECT VÀO CONFIGURATION (QUAN TRỌNG!)
+//    var envVars = new Dictionary<string, string>
+//    {
+//        ["EmailSettings:FromEmail"] = Environment.GetEnvironmentVariable("EmailSettings__FromEmail") ?? "",
+//        ["EmailSettings:SmtpHost"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpHost") ?? "",
+//        ["EmailSettings:SmtpPort"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPort") ?? "",
+//        ["EmailSettings:SmtpUser"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpUser") ?? "",
+//        ["EmailSettings:SmtpPass"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPass") ?? ""
+//    };
+
+//    foreach (var kvp in envVars)
+//    {
+//        if (!string.IsNullOrEmpty(kvp.Value))
+//        {
+//            builder.Configuration[kvp.Key] = kvp.Value;
+//        }
+//    }
+//}
+//else
+//{
+//    Console.WriteLine($"⚠️ SMTP.env not found at: {envPath}");
+//}
 
 // ✅ DEBUG
-Console.WriteLine("=== CONFIG CHECK ===");
-Console.WriteLine($"FromEmail: {builder.Configuration["EmailSettings:FromEmail"]}");
-Console.WriteLine($"SmtpHost: {builder.Configuration["EmailSettings:SmtpHost"]}");
-Console.WriteLine($"SmtpUser: {builder.Configuration["EmailSettings:SmtpUser"]}");
-Console.WriteLine($"SmtpPass: {(builder.Configuration["EmailSettings:SmtpPass"]?.Length > 0 ? "***SET***" : "❌ EMPTY")}");
-Console.WriteLine("====================");
+//Console.WriteLine("=== CONFIG CHECK ===");
+//Console.WriteLine($"FromEmail: {builder.Configuration["EmailSettings:FromEmail"]}");
+//Console.WriteLine($"SmtpHost: {builder.Configuration["EmailSettings:SmtpHost"]}");
+//Console.WriteLine($"SmtpUser: {builder.Configuration["EmailSettings:SmtpUser"]}");
+//Console.WriteLine($"SmtpPass: {(builder.Configuration["EmailSettings:SmtpPass"]?.Length > 0 ? "***SET***" : "❌ EMPTY")}");
+//Console.WriteLine("====================");
 
 
 builder.Services.AddHttpClient();
+
+builder.Services.AddScoped<GeminiHelper>();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 //NewtonsoftJson cho GenericResult<T>

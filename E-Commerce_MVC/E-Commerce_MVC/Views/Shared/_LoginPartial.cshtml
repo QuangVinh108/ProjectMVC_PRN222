@@ -17,18 +17,19 @@
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                 <i class="bi bi-person-circle"></i> @User.Identity.Name
             </a>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li>
-                    <a class="dropdown-item" asp-controller="Order" asp-action="MyOrders">
-                        <i class="bi bi-box-seam"></i> Đơn hàng
-                    </a>
-                </li>               
+            <ul class="dropdown-menu dropdown-menu-end">                               
                 <li><hr class="dropdown-divider"></li>
                 @if (!User.IsInRole("Admin"))
                 {
                     <li>
                         <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
                             <i class="bi bi-person-vcard"></i> Thông tin cá nhân
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">
+                            <i class="bi bi-key"></i> Đổi mật khẩu
                         </a>
                     </li>
                 }
