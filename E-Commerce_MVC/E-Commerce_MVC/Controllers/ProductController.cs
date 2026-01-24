@@ -28,7 +28,7 @@ namespace E_Commerce_MVC.Controllers
             var products = _productService.GetAll();
             return View(products);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public IActionResult Create()
         {
@@ -38,7 +38,7 @@ namespace E_Commerce_MVC.Controllers
 
             return View();
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateProductViewModel model) // Thêm async Task
@@ -87,7 +87,7 @@ namespace E_Commerce_MVC.Controllers
             ViewBag.Categories = new SelectList(categories, "CategoryId", "CategoryName", model.CategoryId);
             return View(model);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -100,7 +100,7 @@ namespace E_Commerce_MVC.Controllers
 
             return View(product);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(CreateProductViewModel model) // Đổi thành async Task
@@ -161,14 +161,14 @@ namespace E_Commerce_MVC.Controllers
             ViewBag.Categories = new SelectList(categories, "CategoryId", "CategoryName", model.CategoryId);
             return View(model);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult Delete(int id)
         {
             _productService.Delete(id);
             return RedirectToAction("Index");
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> AnalyzeProductImage(IFormFile file)
         {

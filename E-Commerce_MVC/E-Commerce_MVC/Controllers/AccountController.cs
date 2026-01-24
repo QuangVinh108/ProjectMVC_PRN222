@@ -59,65 +59,77 @@ namespace E_Commerce_MVC.Controllers
 
         // POST: /Account/Login → Xử lý đăng nhập
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model)
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Login(LoginViewModel model)
+{
+    if (!ModelState.IsValid)
+    {
+        return View(model);
+    }
+
+    Console.WriteLine($"=== LOGIN REQUEST === Username: {model.Username}");
+    try
+    {
+        // ✅ GỌI AuthService - BÂY GIỜ NHẬN CẢ ROLE
+        var (accessToken, refreshToken, role) = await _authService.LoginAsync(model.Username, model.Password);
+        
+        if (accessToken == null)
         {
-            if (!ModelState.IsValid)
+            Console.WriteLine("❌ Login failed - Invalid credentials");
+            ModelState.AddModelError(string.Empty, "Tên tài khoản hoặc mật khẩu không đúng");
+            return View(model);
+        }
+
+        Console.WriteLine($"✅ Login successful for {model.Username} - Role: {role}");
+        
+        // Set JWT cookie
+        Response.Cookies.Append("jwt", accessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTime.UtcNow.AddMinutes(25)
+        });
+        
+        // Optional: Set refresh token
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
             {
-                return View(model);
-            }
+                HttpOnly = true,
+                Secure = Request.IsHttps,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+        }
 
-            Console.WriteLine($"=== LOGIN REQUEST === Username: {model.Username}");
+        TempData["SuccessMessage"] = "Đăng nhập thành công!";
 
-            try
+        // ✅ REDIRECT THEO ROLE
+        if (!string.IsNullOrEmpty(role))
+        {
+            switch (role.ToLower())
             {
-                // Gọi AuthService để xác thực
-                var (accessToken, refreshToken) = await _authService.LoginAsync(model.Username, model.Password);
-
-                if (accessToken == null)
-                {
-                    Console.WriteLine("❌ Login failed - Invalid credentials");
-
-                    // ✅ THÊM LỖI VÀO MODELSTATE - HIỂN THỊ TRÊN FORM
-                    ModelState.AddModelError(string.Empty, "Tên tài khoản hoặc mật khẩu không đúng");
-                    return View(model);
-                }
-
-                Console.WriteLine($"✅ Login successful for {model.Username}");
-
-                // Set JWT cookie
-                Response.Cookies.Append("jwt", accessToken, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = Request.IsHttps,
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTime.UtcNow.AddMinutes(25)
-                });
-
-                // Optional: Set refresh token
-                if (!string.IsNullOrEmpty(refreshToken))
-                {
-                    Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = Request.IsHttps,
-                        SameSite = SameSiteMode.Strict,
-                        Expires = DateTime.UtcNow.AddDays(7)
-                    });
-                }
-
-                TempData["SuccessMessage"] = "Đăng nhập thành công!";
-                return LocalRedirect(model.ReturnUrl ?? "/Product");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception in Login: {ex.Message}");
-
-                // ✅ THÊM LỖI VÀO MODELSTATE
-                ModelState.AddModelError(string.Empty, "Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.");
-                return View(model);
+                case "admin":
+                    return RedirectToAction("Dashboard", "Admin");
+                
+                case "customer":
+                default:
+                    // Ưu tiên returnUrl nếu có, không thì về Product
+                    return LocalRedirect(model.ReturnUrl ?? "/Product");
             }
         }
+
+        // Fallback
+        return LocalRedirect(model.ReturnUrl ?? "/Product");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Exception in Login: {ex.Message}");
+        ModelState.AddModelError(string.Empty, "Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.");
+        return View(model);
+    }
+}
 
         [HttpGet]
         [Authorize] // Bắt buộc phải đăng nhập mới xem được
@@ -144,7 +156,6 @@ namespace E_Commerce_MVC.Controllers
 
         // POST: /Account/Logout → Xóa cookie
         // ==================== GOOGLE LOGIN ====================
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GoogleLogin(string idToken, string? returnUrl = "/")
@@ -167,7 +178,6 @@ namespace E_Commerce_MVC.Controllers
 
                 // Handle login
                 var result = await _googleAuthService.HandleGoogleLoginAsync(googleUser);
-
                 if (!result.Success)
                 {
                     TempData["ErrorMessage"] = result.Message ?? "Đăng nhập Google thất bại";
@@ -196,6 +206,22 @@ namespace E_Commerce_MVC.Controllers
                 }
 
                 TempData["SuccessMessage"] = result.Message;
+
+                // ✅ REDIRECT THEO ROLE (nếu GoogleAuthResult có Role)
+                // Bạn cần thêm property Role vào GoogleAuthResult hoặc lấy từ JWT
+                if (!string.IsNullOrEmpty(result.Role))
+                {
+                    switch (result.Role.ToLower())
+                    {
+                        case "admin":
+                            return RedirectToAction("Dashboard", "Admin");
+                        case "manager":
+                            return RedirectToAction("Dashboard", "Manager");
+                        default:
+                            return LocalRedirect(returnUrl ?? "/Product");
+                    }
+                }
+
                 return LocalRedirect(returnUrl ?? "/Product");
             }
             catch (Exception ex)
@@ -205,6 +231,7 @@ namespace E_Commerce_MVC.Controllers
                 return RedirectToAction("Login");
             }
         }
+
 
         // ==================== LOGOUT ====================
 

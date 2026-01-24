@@ -173,5 +173,55 @@ namespace DAL.Repository
         {
             await _context.SaveChangesAsync();
         }
+        // ====  DASHBOARD ==== 
+
+        public async Task<int> GetTotalUserCountAsync()
+        {
+            return await _context.Users.CountAsync();
+        }
+
+        public async Task<int> GetNewUsersCountThisMonthAsync()
+        {
+            var firstDayThisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            return await _context.Users
+                .CountAsync(u => u.CreatedAt >= firstDayThisMonth);
+        }
+
+        public async Task<int> GetNewUsersCountLastMonthAsync()
+        {
+            var now = DateTime.Now;
+            var firstDayThisMonth = new DateTime(now.Year, now.Month, 1);
+            var firstDayLastMonth = firstDayThisMonth.AddMonths(-1);
+
+            return await _context.Users
+                .CountAsync(u => u.CreatedAt >= firstDayLastMonth && u.CreatedAt < firstDayThisMonth);
+        }
+
+        public async Task<List<User>> GetUsersByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Users
+                .Include(u => u.Role)
+                .Where(u => u.CreatedAt >= startDate && u.CreatedAt <= endDate)
+                .OrderBy(u => u.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<Dictionary<int, int>> GetUserGrowthByMonthAsync(int months = 6)
+        {
+            var startDate = DateTime.Now.AddMonths(-months);
+
+            var users = await _context.Users
+                .Where(u => u.CreatedAt >= startDate)
+                .GroupBy(u => new { u.CreatedAt.Year, u.CreatedAt.Month })
+                .Select(g => new
+                {
+                    MonthKey = g.Key.Year * 100 + g.Key.Month, // 202601
+                    Count = g.Count()
+                })
+                .ToDictionaryAsync(x => x.MonthKey, x => x.Count);
+
+            return users;
+        }
+
     }
 }

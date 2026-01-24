@@ -81,6 +81,69 @@ namespace DAL.Repository
         {
             return await _context.Orders.AnyAsync(o => o.OrderId == orderId);
         }
+        public async Task<int> GetTotalOrderCountAsync()
+        {
+            return await _context.Orders.CountAsync();
+        }
+
+        public async Task<decimal> GetTotalRevenueAsync()
+        {
+            return await _context.Orders
+                .Where(o => o.Status == "Completed")
+                .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
+        }
+
+        public async Task<List<Order>> GetOrdersByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderItems) // ✅ OrderItems thay vì OrderDetails
+                    .ThenInclude(oi => oi.Product)
+                        .ThenInclude(p => p.Category)
+                .Where(o => o.OrderDate >= startDate && o.OrderDate <= endDate)
+                .OrderBy(o => o.OrderDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<Order>> GetOrdersThisMonthAsync()
+        {
+            var firstDayThisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            return await _context.Orders
+                .Include(o => o.OrderItems) // ✅ Include để tính revenue
+                .Where(o => o.OrderDate >= firstDayThisMonth)
+                .ToListAsync();
+        }
+
+        public async Task<List<Order>> GetOrdersLastMonthAsync()
+        {
+            var now = DateTime.Now;
+            var firstDayThisMonth = new DateTime(now.Year, now.Month, 1);
+            var firstDayLastMonth = firstDayThisMonth.AddMonths(-1);
+
+            return await _context.Orders
+                .Include(o => o.OrderItems) // ✅ Include để tính revenue
+                .Where(o => o.OrderDate >= firstDayLastMonth && o.OrderDate < firstDayThisMonth)
+                .ToListAsync();
+        }
+
+        public async Task<Dictionary<string, int>> GetOrdersByStatusAsync()
+        {
+            return await _context.Orders
+                .GroupBy(o => o.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Status ?? "Unknown", x => x.Count);
+        }
+
+        public async Task<List<Order>> GetRecentOrdersAsync(int count = 10)
+        {
+            return await _context.Orders
+                .Include(o => o.User)
+                .OrderByDescending(o => o.OrderDate)
+                .Take(count)
+                .ToListAsync();
+        }
+
+
     }
 }
 
