@@ -41,6 +41,7 @@ namespace BLL.DTOs
         public string? Message { get; set; }
         public string? AccessToken { get; set; }
         public string? RefreshToken { get; set; }
+        public string? Role { get; set; } //  ROLE
         public GoogleAuthErrorType ErrorType { get; set; }
         public string? ConflictEmail { get; set; }
     }

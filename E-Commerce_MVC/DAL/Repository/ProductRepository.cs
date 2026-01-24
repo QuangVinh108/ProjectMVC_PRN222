@@ -52,6 +52,28 @@ namespace DAL.Repository
                 _context.Products.Update(product); 
                 _context.SaveChanges(); 
             }
-        }        
+        }
+        // ==== DASHBOARD ==== 
+        public async Task<int> GetTotalProductCountAsync()
+        {
+            return await _context.Products.CountAsync();
+        }
+
+        public async Task<List<Product>> GetActiveProductsAsync()
+        {
+            return await _context.Products
+                .Include(p => p.Category)
+                .Where(p => p.Status == 1) // Status = 1 là Active
+                .ToListAsync();
+        }
+
+        public async Task<List<Product>> GetByCategoryAsync(int categoryId)
+        {
+            return await _context.Products
+                .Include(p => p.Category)
+                .Where(p => p.CategoryId == categoryId)
+                .ToListAsync();
+        }
+
     }
 }

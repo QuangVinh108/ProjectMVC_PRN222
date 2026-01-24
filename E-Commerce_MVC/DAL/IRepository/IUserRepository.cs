@@ -33,5 +33,13 @@ namespace DAL.IRepository
         Task<User?> FindVerifiedUserByEmailExcludingUserIdAsync(string email, int excludeUserId);
         Task<User?> FindGoogleUserByEmailExcludingUserIdAsync(string email, int excludeUserId);
 
+        //====== DASHBOARD =====
+        Task<int> GetTotalUserCountAsync();
+        Task<int> GetNewUsersCountThisMonthAsync();
+        Task<int> GetNewUsersCountLastMonthAsync();
+        Task<List<User>> GetUsersByDateRangeAsync(DateTime startDate, DateTime endDate);
+        Task<Dictionary<int, int>> GetUserGrowthByMonthAsync(int months = 6);
+
+
     }
 }

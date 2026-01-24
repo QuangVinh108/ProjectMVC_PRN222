@@ -13,6 +13,12 @@ namespace DAL.IRepository
         Product GetProductById(int id);
         void AddProduct(Product product);
         void UpdateProduct(Product product);
-        void DeleteProduct(int id);       
+        void DeleteProduct(int id);
+
+        //===== DASHBOARD =====
+        Task<int> GetTotalProductCountAsync();
+        Task<List<Product>> GetActiveProductsAsync();
+        Task<List<Product>> GetByCategoryAsync(int categoryId);
+
     }
 }

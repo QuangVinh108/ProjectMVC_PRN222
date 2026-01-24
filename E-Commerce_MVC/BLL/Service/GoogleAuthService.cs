@@ -154,7 +154,7 @@ namespace BLL.Service
             // TRƯỜNG HỢP 2: GoogleId đã tồn tại
             if (existingUserByGoogleId != null)
             {
-                Console.WriteLine($"✅ Found existing user by GoogleId: {existingUserByGoogleId.UserName}");
+                Console.WriteLine($"✅ Found existing user by GoogleId: {existingUserByGoogleId.UserName}, Role: {existingUserByGoogleId.Role?.RoleName}");
                 var (accessToken, refreshToken) = await _authService.GenerateTokensAsync(existingUserByGoogleId.UserId);
 
                 return new GoogleAuthResult
@@ -162,6 +162,7 @@ namespace BLL.Service
                     Success = true,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
+                    Role = existingUserByGoogleId.Role?.RoleName, // ✅ THÊM ROLE
                     Message = "Đăng nhập thành công"
                 };
             }
@@ -175,7 +176,7 @@ namespace BLL.Service
             // TRƯỜNG HỢP 2b: Email tồn tại VÀ đã verify
             if (existingUserByEmail != null && existingUserByEmail.EmailConfirmed)
             {
-                Console.WriteLine($"✅ Found existing verified user by Email: {existingUserByEmail.UserName}");
+                Console.WriteLine($"✅ Found existing verified user by Email: {existingUserByEmail.UserName}, Role: {existingUserByEmail.Role?.RoleName}");
                 Console.WriteLine("Linking GoogleId to existing account...");
 
                 existingUserByEmail.GoogleId = googleId;
@@ -189,6 +190,7 @@ namespace BLL.Service
                     Success = true,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
+                    Role = existingUserByEmail.Role?.RoleName, // ✅ THÊM ROLE
                     Message = "Đã liên kết tài khoản với Google"
                 };
             }
@@ -196,7 +198,7 @@ namespace BLL.Service
             // Email tồn tại NHƯNG chưa verify
             if (existingUserByEmail != null && !existingUserByEmail.EmailConfirmed)
             {
-                Console.WriteLine($"✅ Found unverified user by Email: {existingUserByEmail.UserName}");
+                Console.WriteLine($"✅ Found unverified user by Email: {existingUserByEmail.UserName}, Role: {existingUserByEmail.Role?.RoleName}");
                 Console.WriteLine("Auto-verifying email and linking GoogleId...");
 
                 existingUserByEmail.EmailConfirmed = true;
@@ -212,6 +214,7 @@ namespace BLL.Service
                     Success = true,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
+                    Role = existingUserByEmail.Role?.RoleName, // ✅ THÊM ROLE
                     Message = "Email đã được xác thực và liên kết với Google"
                 };
             }
@@ -250,7 +253,7 @@ namespace BLL.Service
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
-            Console.WriteLine($"✅ New user created with UserId: {newUser.UserId}");
+            Console.WriteLine($"✅ New user created with UserId: {newUser.UserId}, Role: {defaultRole.RoleName}");
 
             var (newAccessToken, newRefreshToken) = await _authService.GenerateTokensAsync(newUser.UserId);
 
@@ -259,6 +262,7 @@ namespace BLL.Service
                 Success = true,
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken,
+                Role = defaultRole.RoleName, // ✅ THÊM ROLE (user mới luôn là Customer)
                 Message = "Tài khoản mới đã được tạo thành công"
             };
         }

@@ -1,0 +1,169 @@
+﻿@* Views/Admin/Reports.cshtml *@
+@{
+    ViewData["Title"] = "Báo cáo";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid">
+    <h2 class="fw-bold text-success mb-4">
+        <i class="bi bi-bar-chart-line"></i> Báo cáo & Phân tích
+    </h2>
+
+    <!-- Filter Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar-event"></i> Từ ngày
+                    </label>
+                    <input type="date" id="startDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar-check"></i> Đến ngày
+                    </label>
+                    <input type="date" id="endDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-file-earmark-bar-graph"></i> Loại báo cáo
+                    </label>
+                    <select id="reportType" class="form-select">
+                        <option value="revenue">Doanh thu</option>
+                        <option value="orders">Đơn hàng</option>
+                        <option value="products">Sản phẩm</option>
+                        <option value="users">Người dùng</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-success w-100" onclick="generateReport()">
+                        <i class="bi bi-search"></i> Tạo báo cáo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Growth Chart -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-graph-up-arrow text-info"></i> Tăng trưởng người dùng (6 tháng gần đây)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userGrowthChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-download text-success"></i> Xuất báo cáo
+            </h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">Xuất dữ liệu báo cáo ra các định dạng khác nhau</p>
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-success" onclick="exportToExcel()">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </button>
+                <button class="btn btn-outline-danger" onclick="exportToPDF()">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+                <button class="btn btn-outline-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> In
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script>
+        // User Growth Chart
+        function loadUserGrowthChart() {
+            fetch('/Admin/GetUserGrowthChartData?months=6')
+                .then(res => res.json())
+                .then(data => {
+                    const ctx = document.getElementById('userGrowthChart').getContext('2d');
+
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                label: 'Người dùng mới',
+                                data: data.data,
+                                backgroundColor: 'rgba(13, 202, 240, 0.8)',
+                                borderColor: 'rgba(13, 202, 240, 1)',
+                                borderWidth: 2,
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+
+        function generateReport() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const reportType = document.getElementById('reportType').value;
+
+            if (!startDate || !endDate) {
+                alert('Vui lòng chọn ngày bắt đầu và kết thúc');
+                return;
+            }
+
+            alert(`Tạo báo cáo: ${reportType}\nTừ: ${startDate}\nĐến: ${endDate}`);
+            // TODO: Implement report generation
+        }
+
+        function exportToExcel() {
+            alert('Chức năng xuất Excel đang được phát triển');
+            // TODO: Implement Excel export
+        }
+
+        function exportToPDF() {
+            alert('Chức năng xuất PDF đang được phát triển');
+            // TODO: Implement PDF export
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Set default dates
+            const today = new Date();
+            const lastMonth = new Date(today);
+            lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+            document.getElementById('startDate').valueAsDate = lastMonth;
+            document.getElementById('endDate').valueAsDate = today;
+
+            loadUserGrowthChart();
+        });
+    </script>
+}

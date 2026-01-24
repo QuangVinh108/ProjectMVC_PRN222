@@ -2,6 +2,7 @@
 @model PagedResult<InventoryDto>
 @{
 	ViewData["Title"] = "Quản lý Kho hàng";
+	Layout = "_AdminLayout";
 	var search = ViewBag.Search as string ?? "";
 }
 
