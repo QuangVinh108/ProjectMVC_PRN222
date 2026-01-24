@@ -120,10 +120,13 @@
 
                             @if (Model.Payment == null || Model.Payment.Status != "Paid")
                             {
-                                <form asp-action="Pay" asp-route-id="@Model.OrderId" method="post" onsubmit="return confirm('Thực hiện thanh toán')">
+                                <form asp-action="Pay"
+                                      asp-controller="Payment"
+                                      asp-route-id="@Model.OrderId"
+                                      method="post">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-success">
-                                        <i class="bi bi-credit-card"></i> Thanh toán
+                                        <i class="bi bi-credit-card"></i> Thanh toán VNPAY
                                     </button>
                                 </form>
                             }
