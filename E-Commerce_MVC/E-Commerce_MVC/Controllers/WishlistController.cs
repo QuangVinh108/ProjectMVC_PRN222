@@ -41,7 +41,7 @@ namespace E_Commerce_MVC.Controllers
 
             string message = result.IsSuccess
                 ? (result.Message ?? "Success")
-                : (result.Message ?? string.Join("; ", result.Errors));  // ⭐ Lấy từ Errors nếu Message null
+                : (result.Message ?? string.Join("; ", result.Errors));
 
             return Json(new
             {
@@ -56,14 +56,14 @@ namespace E_Commerce_MVC.Controllers
             var result = await _wishlistService.RemoveFromWishlistAsync(wishlistProductId);
             if (!result.IsSuccess) return BadRequest();
 
-            return RedirectToAction("Index");  // ✅ Tự reload Index + list
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
         public async Task<IActionResult> Clear()
         {
-            await _wishlistService.ClearWishlistAsync();  // Không cần check
-            return RedirectToAction("Index");  // ✅ Tự reload Index
+            await _wishlistService.ClearWishlistAsync();
+            return RedirectToAction("Index");
         }
 
 

@@ -104,20 +104,29 @@
                                         }
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm" role="group">
+                                        <div class="d-flex justify-content-center align-items-center gap-2">
                                             <a asp-controller="Shop" asp-action="Details" asp-route-id="@item.ProductId"
-                                               class="btn btn-outline-primary" title="Xem chi tiết">
+                                               class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
+                                               style="width:32px;height:32px;" title="Xem chi tiết">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a asp-controller="Cart" asp-action="Add" asp-route-id="@item.ProductId"
-                                               class="btn btn-outline-success" title="Thêm vào giỏ">
+                                            <button onclick="addToCart(@item.ProductId, event)"
+                                                    class="btn btn-outline-success" title="Thêm vào giỏ">
                                                 <i class="bi bi-cart-plus"></i>
-                                            </a>
-                                            <form asp-action="Remove" asp-route-wishlistProductId="@item.WishlistProductId"
-                                                  class="d-inline" method="post"
-                                                  onsubmit="return confirm('Xóa @item.ProductName khỏi wishlist?')">
+                                            </button>
+                                            @* <form asp-action="Remove" asp-route-wishlistProductId="@item.WishlistProductId" *@
+                                            @*       class="d-inline" method="post" *@
+                                            @*       onsubmit="return confirm('Xóa @item.ProductName khỏi wishlist?')"> *@
+                                            @*     @Html.AntiForgeryToken() *@
+                                            @*     <button type="submit" class="btn btn-outline-danger" title="Xóa"> *@
+                                            @*         <i class="bi bi-trash"></i> *@
+                                            @*     </button> *@
+                                            @* </form> *@
+
+                                            <form id="remove-@item.WishlistProductId" asp-action="Remove"
+                                                  asp-route-wishlistProductId="@item.WishlistProductId" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-outline-danger" title="Xóa">
+                                                <button type="submit" class="btn btn-outline-danger">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -135,4 +144,154 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // 1. Add to Cart AJAX
+        async function addToCart(productId, event) {
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split spinner-border spinner-border-sm"></i>';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                const response = await fetch('/Cart/Add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `productId=${productId}&quantity=1`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Success animation
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    }, 1000);
+
+                    // Toast
+                    showToast('Đã thêm vào giỏ hàng!', 'success');
+                    updateCartBadge(result.count);
+                } else {
+                    showToast('Lỗi: ' + (result.message || 'Không thể thêm'), 'danger');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối', 'danger');
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        // 2. Remove from Wishlist AJAX
+        async function removeFromWishlist(wishlistProductId, event) {
+            if (!confirm('Xóa khỏi wishlist?')) return;
+
+            const form = event.target.closest('form');
+            const btn = form.querySelector('button[type="submit"]');
+            const originalHtml = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split spinner-border spinner-border-sm"></i>';
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    form.closest('tr').style.opacity = '0.5';
+                    form.remove();
+                    showToast(result.message || 'Đã xóa!', 'success');
+                    updateWishlistBadge();  // Update navbar
+                } else {
+                    showToast(result.message || 'Lỗi xóa', 'danger');
+                }
+            } catch (error) {
+                showToast('Lỗi hệ thống', 'danger');
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        // 3. Toast notifications
+        function showToast(message, type = 'success') {
+            const toastHtml = `
+                <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+                    <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+            const toastEl = document.querySelector('.toast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        }
+
+        // 4. Update badges (navbar)
+        async function updateWishlistBadge() {
+            try {
+                const response = await fetch('/Wishlist/Count');
+                const count = await response.json();
+                const badge = document.querySelector('#wishlistBadge');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'block' : 'none';
+                }
+            } catch(e) {}
+        }
+
+        async function updateCartBadge() {
+            try {
+                const response = await fetch('/Cart/Count');
+                const count = await response.json();
+                const badge = document.querySelector('#cartBadge');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'block' : 'none';
+                }
+            } catch(e) {}
+        }
+
+        // 5. Form onclick handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cart buttons
+            document.querySelectorAll('[onclick*="addToCart"]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const productId = this.getAttribute('onclick').match(/addToCart\((\d+)\)/)?.[1];
+                    if (productId) addToCart(parseInt(productId), e);
+                });
+            });
+
+            // Remove forms
+                    document.querySelectorAll('form[asp-action="Remove"]').forEach(form => {
+                const wishlistProductId = form.getAttribute('asp-route-wishlistProductId') ||
+                                         form.dataset.wishlistProductId ||
+                                         form.querySelector('input[name="wishlistProductId"]')?.value;
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (wishlistProductId) {
+                        removeFromWishlist(wishlistProductId, e);
+                    }
+                });
+            });
+        });
+    </script>
 }
+
