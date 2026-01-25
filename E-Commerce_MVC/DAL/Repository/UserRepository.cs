@@ -222,6 +222,50 @@ namespace DAL.Repository
 
             return users;
         }
+        /// <summary>
+        /// Tìm user theo GoogleId (bao gồm cả Role)
+        /// </summary>
+        public async Task<User?> GetByGoogleIdAsync(string googleId)
+        {
+            return await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.GoogleId == googleId);
+        }
+
+        /// <summary>
+        /// Tìm user theo Email kèm Role
+        /// </summary>
+        public async Task<User?> GetByEmailWithRoleAsync(string email)
+        {
+            return await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        /// <summary>
+        /// Đếm số user có username bắt đầu bằng prefix (dùng để generate unique username)
+        /// </summary>
+        public async Task<int> CountUsersWithUsernameStartingWithAsync(string usernamePrefix)
+        {
+            return await _context.Users
+                .CountAsync(u => u.UserName.StartsWith(usernamePrefix));
+        }
+        public async Task<User> CreateAsync(User user)
+        {
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
+            return user;
+        }
+
+        /// <summary>
+        /// Cập nhật user (async)
+        /// </summary>
+        public async Task UpdateAsync(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
+
 
     }
 }

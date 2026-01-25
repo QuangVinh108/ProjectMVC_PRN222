@@ -1,7 +1,7 @@
 ﻿using BLL.DTOs;
 using BLL.IService;
 using DAL.Entities;
-using Microsoft.EntityFrameworkCore;
+using DAL.IRepository;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -15,18 +15,21 @@ namespace BLL.Service
 {
     public class GoogleAuthService : IGoogleAuthService
     {
-        private readonly ShopDbContext _context;
+        private readonly IUserRepository _userRepo;
         private readonly IAuthService _authService;
         private readonly IConfiguration _configuration;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IRoleRepository _roleRepo;
 
         public GoogleAuthService(
-            ShopDbContext context,
+            IUserRepository userRepo,
+            IRoleRepository roleRepo,
             IAuthService authService,
             IConfiguration configuration,
             IHttpClientFactory httpClientFactory)
         {
-            _context = context;
+            _userRepo = userRepo;
+            _roleRepo = roleRepo;
             _authService = authService;
             _configuration = configuration;
             _httpClientFactory = httpClientFactory;
@@ -145,13 +148,10 @@ namespace BLL.Service
             var email = googleUser.Email;
             var googleId = googleUser.Sub;
 
-            // Tìm user theo GoogleId
+            // ========== TRƯỜNG HỢP 1: GoogleId đã tồn tại ==========
             Console.WriteLine($"Searching user by GoogleId: {googleId}");
-            var existingUserByGoogleId = await _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.GoogleId == googleId);
+            var existingUserByGoogleId = await _userRepo.GetByGoogleIdAsync(googleId);
 
-            // TRƯỜNG HỢP 2: GoogleId đã tồn tại
             if (existingUserByGoogleId != null)
             {
                 Console.WriteLine($"✅ Found existing user by GoogleId: {existingUserByGoogleId.UserName}, Role: {existingUserByGoogleId.Role?.RoleName}");
@@ -162,18 +162,15 @@ namespace BLL.Service
                     Success = true,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
-                    Role = existingUserByGoogleId.Role?.RoleName, // ✅ THÊM ROLE
+                    Role = existingUserByGoogleId.Role?.RoleName,
                     Message = "Đăng nhập thành công"
                 };
             }
 
-            // Tìm user theo Email
+            // ========== TRƯỜNG HỢP 2: Email tồn tại VÀ đã verify ==========
             Console.WriteLine($"Searching user by Email: {email}");
-            var existingUserByEmail = await _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == email);
+            var existingUserByEmail = await _userRepo.GetByEmailWithRoleAsync(email);
 
-            // TRƯỜNG HỢP 2b: Email tồn tại VÀ đã verify
             if (existingUserByEmail != null && existingUserByEmail.EmailConfirmed)
             {
                 Console.WriteLine($"✅ Found existing verified user by Email: {existingUserByEmail.UserName}, Role: {existingUserByEmail.Role?.RoleName}");
@@ -181,7 +178,7 @@ namespace BLL.Service
 
                 existingUserByEmail.GoogleId = googleId;
                 existingUserByEmail.LoginProvider = "Google";
-                await _context.SaveChangesAsync();
+                await _userRepo.UpdateAsync(existingUserByEmail);
 
                 var (accessToken, refreshToken) = await _authService.GenerateTokensAsync(existingUserByEmail.UserId);
 
@@ -190,12 +187,12 @@ namespace BLL.Service
                     Success = true,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
-                    Role = existingUserByEmail.Role?.RoleName, // ✅ THÊM ROLE
+                    Role = existingUserByEmail.Role?.RoleName,
                     Message = "Đã liên kết tài khoản với Google"
                 };
             }
 
-            // Email tồn tại NHƯNG chưa verify
+            // ========== TRƯỜNG HỢP 3: Email tồn tại NHƯNG chưa verify ==========
             if (existingUserByEmail != null && !existingUserByEmail.EmailConfirmed)
             {
                 Console.WriteLine($"✅ Found unverified user by Email: {existingUserByEmail.UserName}, Role: {existingUserByEmail.Role?.RoleName}");
@@ -205,7 +202,7 @@ namespace BLL.Service
                 existingUserByEmail.EmailConfirmedAt = DateTime.UtcNow;
                 existingUserByEmail.GoogleId = googleId;
                 existingUserByEmail.LoginProvider = "Google";
-                await _context.SaveChangesAsync();
+                await _userRepo.UpdateAsync(existingUserByEmail);
 
                 var (accessToken, refreshToken) = await _authService.GenerateTokensAsync(existingUserByEmail.UserId);
 
@@ -214,14 +211,17 @@ namespace BLL.Service
                     Success = true,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
-                    Role = existingUserByEmail.Role?.RoleName, // ✅ THÊM ROLE
+                    Role = existingUserByEmail.Role?.RoleName,
                     Message = "Email đã được xác thực và liên kết với Google"
                 };
             }
 
-            // TRƯỜNG HỢP 1: Email chưa tồn tại - Tạo user mới
+            // ========== TRƯỜNG HỢP 4: Email chưa tồn tại - Tạo user mới ==========
             Console.WriteLine("Creating new user...");
-            var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Customer");
+
+            // ✅ SỬ DỤNG REPOSITORY ĐỂ LẤY ROLE
+            var defaultRole = await _userRepo.GetRoleByNameAsync("Customer");
+
             if (defaultRole == null)
             {
                 Console.WriteLine("❌ Customer role not found in database!");
@@ -233,7 +233,8 @@ namespace BLL.Service
                 };
             }
 
-            var username = GenerateUniqueUsername(email);
+            // ✅ SỬ DỤNG ASYNC METHOD
+            var username = await GenerateUniqueUsernameAsync(email);
             Console.WriteLine($"Generated username: {username}");
 
             var newUser = new User
@@ -251,8 +252,8 @@ namespace BLL.Service
                 IsActive = true
             };
 
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+            // ✅ SỬ DỤNG REPOSITORY ĐỂ TẠO USER
+            await _userRepo.CreateAsync(newUser);
             Console.WriteLine($"✅ New user created with UserId: {newUser.UserId}, Role: {defaultRole.RoleName}");
 
             var (newAccessToken, newRefreshToken) = await _authService.GenerateTokensAsync(newUser.UserId);
@@ -262,17 +263,18 @@ namespace BLL.Service
                 Success = true,
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken,
-                Role = defaultRole.RoleName, // ✅ THÊM ROLE (user mới luôn là Customer)
+                Role = defaultRole.RoleName,
                 Message = "Tài khoản mới đã được tạo thành công"
             };
         }
 
-        private string GenerateUniqueUsername(string email)
+
+        private async Task<string> GenerateUniqueUsernameAsync(string email)
         {
             var baseUsername = email.Split('@')[0];
             var username = $"{baseUsername}_google";
 
-            var count = _context.Users.Count(u => u.UserName.StartsWith(username));
+            var count = await _userRepo.CountUsersWithUsernameStartingWithAsync(username);
             if (count > 0)
             {
                 username = $"{username}{count + 1}";

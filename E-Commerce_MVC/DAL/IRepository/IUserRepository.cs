@@ -39,6 +39,13 @@ namespace DAL.IRepository
         Task<int> GetNewUsersCountLastMonthAsync();
         Task<List<User>> GetUsersByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<Dictionary<int, int>> GetUserGrowthByMonthAsync(int months = 6);
+        //===== ForGoogle ===== 
+        Task<User?> GetByGoogleIdAsync(string googleId);
+        Task<User?> GetByEmailWithRoleAsync(string email);
+        Task<int> CountUsersWithUsernameStartingWithAsync(string usernamePrefix);
+        Task<User> CreateAsync(User user);
+        Task UpdateAsync(User user);
+
 
 
     }
