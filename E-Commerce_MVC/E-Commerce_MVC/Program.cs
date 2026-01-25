@@ -30,42 +30,42 @@ if (builder.Environment.IsDevelopment())
     Console.WriteLine("======================");
 }
 
-//var envPath = Path.Combine(Directory.GetCurrentDirectory(), "SMTP.env");
-//if (File.Exists(envPath))
-//{
-//    Env.Load(envPath);
-//    Console.WriteLine("✅ SMTP.env loaded");
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "SMTP.env");
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    Console.WriteLine("✅ SMTP.env loaded");
 
-//    // ✅ INJECT VÀO CONFIGURATION (QUAN TRỌNG!)
-//    var envVars = new Dictionary<string, string>
-//    {
-//        ["EmailSettings:FromEmail"] = Environment.GetEnvironmentVariable("EmailSettings__FromEmail") ?? "",
-//        ["EmailSettings:SmtpHost"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpHost") ?? "",
-//        ["EmailSettings:SmtpPort"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPort") ?? "",
-//        ["EmailSettings:SmtpUser"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpUser") ?? "",
-//        ["EmailSettings:SmtpPass"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPass") ?? ""
-//    };
+    // ✅ INJECT VÀO CONFIGURATION (QUAN TRỌNG!)
+    var envVars = new Dictionary<string, string>
+    {
+        ["EmailSettings:FromEmail"] = Environment.GetEnvironmentVariable("EmailSettings__FromEmail") ?? "",
+        ["EmailSettings:SmtpHost"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpHost") ?? "",
+        ["EmailSettings:SmtpPort"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPort") ?? "",
+        ["EmailSettings:SmtpUser"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpUser") ?? "",
+        ["EmailSettings:SmtpPass"] = Environment.GetEnvironmentVariable("EmailSettings__SmtpPass") ?? ""
+    };
 
-//    foreach (var kvp in envVars)
-//    {
-//        if (!string.IsNullOrEmpty(kvp.Value))
-//        {
-//            builder.Configuration[kvp.Key] = kvp.Value;
-//        }
-//    }
-//}
-//else
-//{
-//    Console.WriteLine($"⚠️ SMTP.env not found at: {envPath}");
-//}
+    foreach (var kvp in envVars)
+    {
+        if (!string.IsNullOrEmpty(kvp.Value))
+        {
+            builder.Configuration[kvp.Key] = kvp.Value;
+        }
+    }
+}
+else
+{
+    Console.WriteLine($"⚠️ SMTP.env not found at: {envPath}");
+}
 
-// ✅ DEBUG
-//Console.WriteLine("=== CONFIG CHECK ===");
-//Console.WriteLine($"FromEmail: {builder.Configuration["EmailSettings:FromEmail"]}");
-//Console.WriteLine($"SmtpHost: {builder.Configuration["EmailSettings:SmtpHost"]}");
-//Console.WriteLine($"SmtpUser: {builder.Configuration["EmailSettings:SmtpUser"]}");
-//Console.WriteLine($"SmtpPass: {(builder.Configuration["EmailSettings:SmtpPass"]?.Length > 0 ? "***SET***" : "❌ EMPTY")}");
-//Console.WriteLine("====================");
+ 
+Console.WriteLine("=== CONFIG CHECK ===");
+Console.WriteLine($"FromEmail: {builder.Configuration["EmailSettings:FromEmail"]}");
+Console.WriteLine($"SmtpHost: {builder.Configuration["EmailSettings:SmtpHost"]}");
+Console.WriteLine($"SmtpUser: {builder.Configuration["EmailSettings:SmtpUser"]}");
+Console.WriteLine($"SmtpPass: {(builder.Configuration["EmailSettings:SmtpPass"]?.Length > 0 ? "***SET***" : "❌ EMPTY")}");
+Console.WriteLine("====================");
 
 
 builder.Services.AddHttpClient();
@@ -96,6 +96,7 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -114,6 +115,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
+
+builder.Services.AddHttpContextAccessor();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>

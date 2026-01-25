@@ -105,3 +105,330 @@ body:has(.login-hero) {
     display: none !important;
 }
 
+
+.modern-footer {
+    background: #0f172a;
+    color: #94a3b8;
+    margin-top: 80px;
+}
+
+/* Footer Main */
+.footer-main {
+    padding: 60px 0 40px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-brand {
+    margin-bottom: 24px;
+}
+
+.footer-logo {
+    font-size: 28px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+    .footer-logo i {
+        color: #3b82f6;
+    }
+
+.footer-description {
+    font-size: 14px;
+    line-height: 1.8;
+    margin-bottom: 24px;
+    color: #94a3b8;
+}
+
+/* Social Links */
+.footer-social {
+    display: flex;
+    gap: 12px;
+}
+
+.social-link {
+    width: 40px;
+    height: 40px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+    .social-link:hover {
+        background: #3b82f6;
+        color: #ffffff;
+        transform: translateY(-3px);
+    }
+
+/* Footer Title */
+.footer-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Footer Links */
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .footer-links li {
+        margin-bottom: 12px;
+    }
+
+    .footer-links a {
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+
+        .footer-links a:hover {
+            color: #3b82f6;
+            padding-left: 5px;
+        }
+
+        .footer-links a::before {
+            content: '';
+            width: 0;
+            height: 2px;
+            background: #3b82f6;
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            transition: width 0.3s ease;
+        }
+
+        .footer-links a:hover::before {
+            width: 20px;
+        }
+
+/* Footer Contact */
+.footer-contact {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .footer-contact li {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+        font-size: 14px;
+    }
+
+    .footer-contact i {
+        color: #3b82f6;
+        font-size: 18px;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+/* Newsletter Section */
+.footer-newsletter {
+    background: rgba(59, 130, 246, 0.05);
+    padding: 40px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.newsletter-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+    .newsletter-title i {
+        color: #3b82f6;
+    }
+
+.newsletter-subtitle {
+    font-size: 14px;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.newsletter-form .input-group {
+    max-width: 500px;
+    margin-left: auto;
+}
+
+.newsletter-form .form-control {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding: 14px 20px;
+    font-size: 15px;
+}
+
+    .newsletter-form .form-control:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        color: #ffffff;
+    }
+
+    .newsletter-form .form-control::placeholder {
+        color: #64748b;
+    }
+
+.newsletter-form .btn-primary {
+    padding: 14px 28px;
+    font-weight: 600;
+    background: #3b82f6;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .newsletter-form .btn-primary:hover {
+        background: #2563eb;
+    }
+
+/* Footer Bottom */
+.footer-bottom {
+    padding: 24px 0;
+}
+
+.footer-copyright {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0;
+}
+
+    .footer-copyright strong {
+        color: #ffffff;
+    }
+
+.footer-payments {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+}
+
+@media (min-width: 768px) {
+    .footer-payments {
+        justify-content: flex-end;
+    }
+}
+
+.payment-label {
+    font-size: 14px;
+    color: #64748b;
+    margin-right: 8px;
+}
+
+.payment-icon {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+    .payment-icon:hover {
+        filter: grayscale(0%);
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+
+/* Responsive */
+@media (max-width: 992px) {
+    .footer-main {
+        padding: 40px 0 30px;
+    }
+
+    .footer-newsletter {
+        padding: 30px 0;
+    }
+
+    .newsletter-title {
+        font-size: 20px;
+    }
+
+    .newsletter-form .input-group {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-logo {
+        font-size: 24px;
+    }
+
+    .footer-title {
+        font-size: 15px;
+        margin-bottom: 16px;
+    }
+
+    .footer-links li {
+        margin-bottom: 10px;
+    }
+
+    .newsletter-form .btn-primary {
+        padding: 12px 20px;
+    }
+
+    .footer-payments {
+        flex-wrap: wrap;
+    }
+
+    .payment-icon {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* Scroll to Top Button (Optional Enhancement) */
+.scroll-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background: #3b82f6;
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+    .scroll-top.visible {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .scroll-top:hover {
+        background: #2563eb;
+        transform: translateY(-5px);
+    }

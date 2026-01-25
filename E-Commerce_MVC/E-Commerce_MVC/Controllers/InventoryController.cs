@@ -44,47 +44,47 @@ namespace E_Commerce_MVC.Controllers
             return View(new CreateInventoryDto());
         }
 
-        [HttpGet("api/getall")]
-        public async Task<IActionResult> GetAll([FromQuery] QueryInventoryDTO query)
-        {
-            var result = await _inventoryService.GetAllAsync(query);
-            if(!result.IsSuccess)
-                return BadRequest(result);
+        //[HttpGet("api/getall")]
+        //public async Task<IActionResult> GetAll([FromQuery] QueryInventoryDTO query)
+        //{
+        //    var result = await _inventoryService.GetAllAsync(query);
+        //    if(!result.IsSuccess)
+        //        return BadRequest(result);
 
-            return Ok(result.Data);
-        }
+        //    return Ok(result.Data);
+        //}
 
-        public async Task<IActionResult> GetByProductId(int productId)
-        {
-            var result = await _inventoryService.GetByProductIdAsync(productId);
-            if (!result.IsSuccess)
-            {
-                return result.Errors.Contains("Inventory not found") 
-                    ? NotFound(result)       // 404
-                    : BadRequest(result);    // 400
-            }
-            return Ok(result.Data);
-        }
+        //public async Task<IActionResult> GetByProductId(int productId)
+        //{
+        //    var result = await _inventoryService.GetByProductIdAsync(productId);
+        //    if (!result.IsSuccess)
+        //    {
+        //        return result.Errors.Contains("Inventory not found") 
+        //            ? NotFound(result)       // 404
+        //            : BadRequest(result);    // 400
+        //    }
+        //    return Ok(result.Data);
+        //}
 
-        [HttpGet("stock/{productId}")]
-        public async Task<IActionResult> GetStock(int productId)
-        {
-            var result = await _inventoryService.GetAvailableStockAsync(productId);
-            if(!result.IsSuccess)
-                return BadRequest(result);
+        //[HttpGet("stock/{productId}")]
+        //public async Task<IActionResult> GetStock(int productId)
+        //{
+        //    var result = await _inventoryService.GetAvailableStockAsync(productId);
+        //    if(!result.IsSuccess)
+        //        return BadRequest(result);
 
-            return Ok(result.Data);
-        }
+        //    return Ok(result.Data);
+        //}
 
-        [HttpGet("has-stock/{productId}")]
-        public async Task<ActionResult> HasStock(int productId, [FromQuery] int quantity = 1)
-        {
-            var result = await _inventoryService.HasStockAsync(productId, quantity);
-            if(!result.IsSuccess)
-                return BadRequest(result);
+        //[HttpGet("has-stock/{productId}")]
+        //public async Task<ActionResult> HasStock(int productId, [FromQuery] int quantity = 1)
+        //{
+        //    var result = await _inventoryService.HasStockAsync(productId, quantity);
+        //    if(!result.IsSuccess)
+        //        return BadRequest(result);
 
-            return Ok(result.Data);
-        }
+        //    return Ok(result.Data);
+        //}
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -104,22 +104,22 @@ namespace E_Commerce_MVC.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPut("{productId}")]
-        public async Task<IActionResult> Update(int productId, [FromBody] UpdateInventoryDto inventory)
-        {
-            if(!ModelState.IsValid)
-                return BadRequest("Productid mismatch or invalid data");
+        //[HttpPut("{productId}")]
+        //public async Task<IActionResult> Update(int productId, [FromBody] UpdateInventoryDto inventory)
+        //{
+        //    if(!ModelState.IsValid)
+        //        return BadRequest("Productid mismatch or invalid data");
 
-            var result = await _inventoryService.UpdateAsync(productId, inventory);
-            if (!result.IsSuccess)
-            {
-                return result.Errors.Contains("Inventory not found")
-                    ? NotFound(result)       // 404
-                    : BadRequest(result);    // 400
-            }
+        //    var result = await _inventoryService.UpdateAsync(productId, inventory);
+        //    if (!result.IsSuccess)
+        //    {
+        //        return result.Errors.Contains("Inventory not found")
+        //            ? NotFound(result)       // 404
+        //            : BadRequest(result);    // 400
+        //    }
 
-            return Ok(result.Data);
-        }
+        //    return Ok(result.Data);
+        //}
 
         public async Task<IActionResult> Edit(int productId)
         {

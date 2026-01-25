@@ -60,6 +60,7 @@
 					<table class="table table-hover mb-0">
 						<thead class="table-light">
 							<tr>
+								<th class="text-center" style="width: 80px;">Hình ảnh</th>
 								<th>Sản phẩm</th>
 								<th>Tồn kho</th>
 								<th>Kho</th>
@@ -73,10 +74,23 @@
 								@foreach (var item in Model.Items)
 								{
 									<tr>
-										<td>
-											<strong>@item.ProductName</strong>
-											<br><small>ID: @item.ProductId</small>
+										<td class="text-center">
+											@if (!string.IsNullOrEmpty(item.ProductImage))
+											{
+												<img src="@item.ProductImage" style="width:50px;height:50px;object-fit:cover;"
+													 class="rounded border bg-white" alt="@item.ProductName" />
+											}
+											else
+											{
+												<div class="d-flex align-items-center justify-content-center rounded border bg-light"
+													 style="width:50px;height:50px;">
+													<i class="bi bi-image text-secondary"></i>
+												</div>
+											}
 										</td>
+
+										<!-- Sản phẩm - chỉ tên + ID -->
+										<td><strong>@item.ProductName</strong><br><small>ID: @item.ProductId</small></td>
 										<td>
 											<span class="badge @(item.Quantity > 0 ? "bg-success" : "bg-danger")">
 												@item.Quantity

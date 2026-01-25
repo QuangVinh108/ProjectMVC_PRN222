@@ -10,5 +10,7 @@ namespace DAL.IRepository
         void AddItem(int userId, int productId, int quantity);
         void UpdateQuantity(int cartItemId, int quantity);
         void RemoveItem(int cartItemId);
+        Task AddOrReplaceSingleItemAsync(int userId, int productId, int quantity);
+
     }
 }
