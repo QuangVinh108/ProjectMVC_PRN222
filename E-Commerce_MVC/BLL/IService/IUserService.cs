@@ -15,6 +15,7 @@ namespace BLL.IService
         void DeleteUser(int id);
         void CreateUser(CreateUserViewModel model);
         void UpdateUser(EditUserViewModel model);
+        void UpdateUser(User user);
         Task CreateUserAsync(CreateUserViewModel model);
         Task<User> GetUserByUserName(string username);
         void UpdateProfile(int userId, UpdateProfileViewModel model);
