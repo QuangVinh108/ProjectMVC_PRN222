@@ -10,6 +10,7 @@ using DAL.Entities;
 using DAL.IRepository;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BLL.Service
 {
@@ -17,10 +18,16 @@ namespace BLL.Service
     {
         private readonly IInventoryRepository _inventoryRepo;
         private readonly IProductRepository _productRepo;
-        public InventoryService(IInventoryRepository inventoryRepo, IProductRepository productRepo)
+        private readonly IOrderRepository _orderRepo;
+        private readonly IOrderItemRepository _orderItemRepo;
+        private readonly ILogger<InventoryService> _logger;
+        public InventoryService(IInventoryRepository inventoryRepo, IProductRepository productRepo, IOrderRepository orderRepository, IOrderItemRepository orderItemRepository, ILogger<InventoryService> logger)
         {
             _inventoryRepo = inventoryRepo;
             _productRepo = productRepo;
+            _orderRepo = orderRepository;
+            _orderItemRepo = orderItemRepository;
+            _logger = logger;
         }
         public async Task<GenericResult<InventoryDto?>> GetByProductIdAsync(int productId)
         {
@@ -228,5 +235,62 @@ namespace BLL.Service
             };
         }
 
+        public async Task<GenericResult<bool>> ProcessPaymentInventoryAsync(int orderId, string paymentStatus)
+        {
+            try
+            {
+                //1. Lấy order và order items
+                var orderResult = await _orderRepo.GetByIdAsync(orderId);
+                if (!orderResult.IsSuccess || orderResult.Data == null)
+                    return GenericResult<bool>.Failure("Order không tồn tại");
+
+                var orderItems = await _orderItemRepo.GetByOrderIdAsync(orderId);
+                if (!orderItems.IsSuccess || !orderItems.Data.Any())
+                    return GenericResult<bool>.Failure("Order không có sản phẩm");
+
+                //2. Xác định action dựa trên payment status
+                bool shouldDebut = paymentStatus == "Paid";
+
+                foreach(var orderItem in orderItems.Data)
+                {
+                    var inventoryResut = await _inventoryRepo.GetByProductIdAsync(orderItem.ProductId);
+                    if (!inventoryResut.IsSucess || inventoryResut.Data == null)
+                    {
+                        _logger.LogWarning("Không tìm thấy inventory cho product {ProductId} trong order {OrderId}", orderItem.ProductId, orderId);
+                        continue;
+                    }
+
+                    var currentQuantity = inventoryResut.Data.Quantity;
+                    var newQuantity = shouldDebut
+                        ? currentQuantity - orderItem.Quantity
+                        : currentQuantity + orderItem.Quantity;
+
+                    if(shouldDebut && newQuantity < 0)
+                    {
+                        _logger.LogWarning("Không đủ stock cho product {ProductId}: cân {Quantity}, còn {Current}", orderItem.ProductId, orderItem.Quantiy, currentQuantity);
+                        return GenericResult<bool>.Failure($"Không đủ hàng cho sản phẩm {orderItem.ProductId}");
+                    }
+
+                    //4. Update inventory
+                    var updateResult = await _inventoryRepo.UpdateQuantityAsync(orderItem.ProdutId, newQuantity);
+
+                    if (!updateResult.IsSuccess)
+                    {
+                        _logger.LogError("Lỗi update inventory cho product {ProductId} trong order {OrderId}", orderItem.ProductId, orderId);
+
+                        return GenericResult<bool>.Failure("Lỗi cập nhật kho");
+                    }
+                }
+
+                _logger.LogInformation("Xử lí inventory thành công cho order {OrderId}, status: {PaymentStatus}", orderId, paymentStatus);
+                return GenericResult<bool>.Success(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi xử lý inventory cho order {OrderId}, status: {PaymentStatus}", orderId, paymentStatus);
+                return GenericResult<bool>.Failure("Lỗi hệ thống khi xử lý kho");
+
+            }
+        }
     }
 }

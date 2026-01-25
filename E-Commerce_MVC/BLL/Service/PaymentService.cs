@@ -10,6 +10,7 @@ namespace BLL.Service
 {
     public class PaymentService : IPaymentService
     {
+        private readonly IInventoryService _inventoryService;
         private readonly IConfiguration _config;
 
         public PaymentService(IConfiguration config)
