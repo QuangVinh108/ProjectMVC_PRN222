@@ -1,43 +1,297 @@
-﻿@model IEnumerable<DAL.Entities.Wishlist>
+﻿@model IEnumerable<BLL.DTOs.WishlistProductDTO>
 @{
-    ViewData["Title"] = "Danh sách Wishlist";
+    ViewData["Title"] = "Wishlist của bạn";
 }
 
-<h2>@ViewData["Title"]</h2>
-<p>
-    <a asp-action="Create" class="btn btn-primary">Thêm mới</a>
-</p>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Wishlist ID</th>
-            <th>User ID</th>
-            <th>Sản phẩm ID</th>
-            <th>Ngày tạo</th>
-            <th>Thao tác</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Model != null && Model.Any())
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-heart-fill text-danger me-2"></i>
+            Wishlist
+        </h2>
+        @if (Model?.Any() == true)
         {
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@item.WishlistId</td>
-                    <td>@item.UserId</td>
-                    @* <td>@item.ProductId</td> *@
-                    <td>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.WishlistId" class="btn btn-sm btn-warning">Sửa</a>
-                        <a asp-action="Details" asp-route-id="@item.WishlistId" class="btn btn-sm btn-info">Chi tiết</a>
-                        <a asp-action="Delete" asp-route-id="@item.WishlistId" class="btn btn-sm btn-danger">Xóa</a>
-                    </td>
-                </tr>
+            <form asp-action="Clear" method="post" class="d-inline" onsubmit="return confirm('Xóa toàn bộ wishlist?')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash3"></i> Xóa tất cả
+                </button>
+            </form>
+        }
+    </div>
+
+    @if (!Model?.Any() ?? true)
+    {
+        <div class="text-center py-5 border rounded bg-light">
+            <i class="bi bi-heart display-4 text-muted opacity-50 mb-3"></i>
+            <h5 class="text-muted">Wishlist trống</h5>
+            <p class="text-muted">Chưa có sản phẩm nào trong wishlist của bạn.</p>
+            <a asp-controller="Shop" asp-action="Index" class="btn btn-primary">
+                <i class="bi bi-shop"></i> Xem sản phẩm
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <strong>Tổng: @Model.Count() sản phẩm</strong>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 60px;"></th>
+                                <th>Sản phẩm</th>
+                                <th style="width: 80px;">Giá</th>
+                                <th style="width: 120px;">Ngày thêm</th>
+                                <th style="max-width: 200px;">Ghi chú</th>
+                                <th style="width: 120px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="text-center">
+                                        @if (!string.IsNullOrEmpty(item.ProductImage))
+                                        {
+                                            <img src="@Url.Content(item.ProductImage)"
+                                                 width="50" height="50"
+                                                 class="rounded shadow-sm object-fit-cover"
+                                                 alt="@item.ProductName"
+                                                 title="@item.ProductName" />
+                                        }
+                                        else
+                                        {
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                                                 style="width:50px;height:50px;">
+                                                <i class="bi bi-image text-muted"></i>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong>@item.ProductName</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            ID: @item.ProductId |
+                                            SKU: @(item.Sku ?? "-") |
+                                            SL: @item.Quantity
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success fs-5">
+                                            @item.Price.ToString("N0") ₫
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark small">
+                                            @item.AddedAt.ToString("dd/MM/yy HH:mm")
+                                        </span>
+                                    </td>
+                                    <td class="small">
+                                        @if (!string.IsNullOrEmpty(item.Note))
+                                        {
+                                            <span class="text-truncate d-block" style="max-width: 180px;" title="@item.Note">
+                                                <i class="bi bi-chat-square-text me-1 text-primary"></i>
+                                                @item.Note
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-center align-items-center gap-2">
+                                            <a asp-controller="Shop" asp-action="Details" asp-route-id="@item.ProductId"
+                                               class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
+                                               style="width:32px;height:32px;" title="Xem chi tiết">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button onclick="addToCart(@item.ProductId, event)"
+                                                    class="btn btn-outline-success" title="Thêm vào giỏ">
+                                                <i class="bi bi-cart-plus"></i>
+                                            </button>
+                                            @* <form asp-action="Remove" asp-route-wishlistProductId="@item.WishlistProductId" *@
+                                            @*       class="d-inline" method="post" *@
+                                            @*       onsubmit="return confirm('Xóa @item.ProductName khỏi wishlist?')"> *@
+                                            @*     @Html.AntiForgeryToken() *@
+                                            @*     <button type="submit" class="btn btn-outline-danger" title="Xóa"> *@
+                                            @*         <i class="bi bi-trash"></i> *@
+                                            @*     </button> *@
+                                            @* </form> *@
+
+                                            <form id="remove-@item.WishlistProductId" asp-action="Remove"
+                                                  asp-route-wishlistProductId="@item.WishlistProductId" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // 1. Add to Cart AJAX
+        async function addToCart(productId, event) {
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split spinner-border spinner-border-sm"></i>';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                const response = await fetch('/Cart/Add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `productId=${productId}&quantity=1`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Success animation
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    }, 1000);
+
+                    // Toast
+                    showToast('Đã thêm vào giỏ hàng!', 'success');
+                    updateCartBadge(result.count);
+                } else {
+                    showToast('Lỗi: ' + (result.message || 'Không thể thêm'), 'danger');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối', 'danger');
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
             }
         }
-        else
-        {
-            <tr><td colspan="5" class="text-center">Chưa có wishlist nào</td></tr>
+
+        // 2. Remove from Wishlist AJAX
+        async function removeFromWishlist(wishlistProductId, event) {
+            if (!confirm('Xóa khỏi wishlist?')) return;
+
+            const form = event.target.closest('form');
+            const btn = form.querySelector('button[type="submit"]');
+            const originalHtml = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split spinner-border spinner-border-sm"></i>';
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    form.closest('tr').style.opacity = '0.5';
+                    form.remove();
+                    showToast(result.message || 'Đã xóa!', 'success');
+                    updateWishlistBadge();  // Update navbar
+                } else {
+                    showToast(result.message || 'Lỗi xóa', 'danger');
+                }
+            } catch (error) {
+                showToast('Lỗi hệ thống', 'danger');
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
         }
-    </tbody>
-</table>
+
+        // 3. Toast notifications
+        function showToast(message, type = 'success') {
+            const toastHtml = `
+                <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+                    <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+            const toastEl = document.querySelector('.toast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        }
+
+        // 4. Update badges (navbar)
+        async function updateWishlistBadge() {
+            try {
+                const response = await fetch('/Wishlist/Count');
+                const count = await response.json();
+                const badge = document.querySelector('#wishlistBadge');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'block' : 'none';
+                }
+            } catch(e) {}
+        }
+
+        async function updateCartBadge() {
+            try {
+                const response = await fetch('/Cart/Count');
+                const count = await response.json();
+                const badge = document.querySelector('#cartBadge');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'block' : 'none';
+                }
+            } catch(e) {}
+        }
+
+        // 5. Form onclick handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cart buttons
+            document.querySelectorAll('[onclick*="addToCart"]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const productId = this.getAttribute('onclick').match(/addToCart\((\d+)\)/)?.[1];
+                    if (productId) addToCart(parseInt(productId), e);
+                });
+            });
+
+            // Remove forms
+                    document.querySelectorAll('form[asp-action="Remove"]').forEach(form => {
+                const wishlistProductId = form.getAttribute('asp-route-wishlistProductId') ||
+                                         form.dataset.wishlistProductId ||
+                                         form.querySelector('input[name="wishlistProductId"]')?.value;
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (wishlistProductId) {
+                        removeFromWishlist(wishlistProductId, e);
+                    }
+                });
+            });
+        });
+    </script>
+}
+

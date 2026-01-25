@@ -10,13 +10,16 @@ namespace E_Commerce_MVC.Controllers
     {
         private readonly IPaymentService _paymentService;
         private readonly ShopDbContext _context; // ✅ THÊM DÒNG NÀY
+        private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
             IPaymentService paymentService,
-            ShopDbContext context) // ✅ INJECT
+            ShopDbContext context,
+            ILogger<PaymentController> logger) // ✅ INJECT
         {
             _paymentService = paymentService;
             _context = context;
+            _logger = logger;
         }
 
         // ================== PAY ==================
@@ -99,5 +102,6 @@ namespace E_Commerce_MVC.Controllers
 
             return RedirectToAction("Details", "Order", new { id = orderId });
         }
+
     }
 }

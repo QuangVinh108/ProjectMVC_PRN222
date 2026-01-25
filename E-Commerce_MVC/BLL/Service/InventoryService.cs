@@ -10,6 +10,7 @@ using DAL.Entities;
 using DAL.IRepository;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BLL.Service
 {
@@ -17,10 +18,16 @@ namespace BLL.Service
     {
         private readonly IInventoryRepository _inventoryRepo;
         private readonly IProductRepository _productRepo;
-        public InventoryService(IInventoryRepository inventoryRepo, IProductRepository productRepo)
+        private readonly IOrderRepository _orderRepo;
+        private readonly IOrderItemRepository _orderItemRepo;
+        private readonly ILogger<InventoryService> _logger;
+        public InventoryService(IInventoryRepository inventoryRepo, IProductRepository productRepo, IOrderRepository orderRepository, IOrderItemRepository orderItemRepository, ILogger<InventoryService> logger)
         {
             _inventoryRepo = inventoryRepo;
             _productRepo = productRepo;
+            _orderRepo = orderRepository;
+            _orderItemRepo = orderItemRepository;
+            _logger = logger;
         }
         public async Task<GenericResult<InventoryDto?>> GetByProductIdAsync(int productId)
         {
@@ -49,42 +56,21 @@ namespace BLL.Service
                 var pageIndex = Math.Max(1, query.PageIndex);
                 var pageSize = Math.Min(100, Math.Max(1, query.PageSize));
 
-                IQueryable<Inventory> queryable = _inventoryRepo.GetAllQueryable("Product");
-
-                // Search
-                if (!string.IsNullOrWhiteSpace(query.Search))
-                {
-                    queryable = queryable.Where(i => EF.Functions.Like(i.Product.ProductName, $"%{query.Search}%") ||
-                                                     EF.Functions.Like(i.Warehouse, $"%{query.Search}%"));
-                }
-
-                // Sorting
                 var sortBy = query.SortBy?.ToLower() ?? "productname";
                 var isDescending = query.SortDirection?.ToLower() == "desc";
-                queryable = ApplySorting(queryable, sortBy, isDescending);
 
-                // Count total
-                var totalCount = await queryable.CountAsync();
+                var (items, totalCount) = await _inventoryRepo.GetPagedAsync(
+                    query.Search,
+                    sortBy,
+                    isDescending,
+                    pageIndex,
+                    pageSize);
 
-
-                // Paging 
-                var items = await queryable
-                    .Skip((pageIndex - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(i => new InventoryDto
-                    {
-                        InventoryId = i.InventoryId,
-                        ProductId = i.ProductId,
-                        ProductName = i.Product.ProductName,
-                        Quantity = i.Quantity,
-                        Warehouse = i.Warehouse,
-                        UpdatedAt = i.UpdatedAt
-                    })
-                    .ToListAsync();
+                var dtoItems = items.Select(MapToDto).ToList();
 
                 var result = new PagedResult<InventoryDto>
                 {
-                    Items = items,
+                    Items = dtoItems,
                     TotalCount = totalCount,
                     PageIndex = pageIndex,
                     PageSize = pageSize
@@ -96,25 +82,6 @@ namespace BLL.Service
             {
                 return GenericResult<PagedResult<InventoryDto>>.Failure($"Error getting inventories: {ex.Message}");
             }
-        }
-
-        private static IQueryable<Inventory> ApplySorting(IQueryable<Inventory> queryable, string sortBy, bool isDescending)
-        {
-            return sortBy switch
-            {
-                "quantity" => isDescending
-                    ? queryable.OrderByDescending(i => i.Quantity)
-                    : queryable.OrderBy(i => i.Quantity),
-                "warehouse" => isDescending
-                    ? queryable.OrderByDescending(i => i.Warehouse)
-                    : queryable.OrderBy(i => i.Warehouse),
-                "updatedat" => isDescending
-                    ? queryable.OrderByDescending(i => i.UpdatedAt)
-                    : queryable.OrderBy(i => i.UpdatedAt),
-                _ => isDescending
-                    ? queryable.OrderByDescending(i => i.Product.ProductName)
-                    : queryable.OrderBy(i => i.Product.ProductName)
-            };
         }
 
         public async Task<GenericResult<InventoryDto>> CreateAsync(CreateInventoryDto dto)
@@ -143,9 +110,7 @@ namespace BLL.Service
 
                 var createdInventory = await _inventoryRepo.CreateAsync(inventory);
 
-                // ✅ RELOAD với Product để tránh NULL
-                var inventoryWithProduct = await _inventoryRepo.GetByProductIdAsync(dto.ProductId);
-                var createdDto = MapToDto(inventoryWithProduct!);
+                var createdDto = MapToDto(createdInventory);
 
                 return GenericResult<InventoryDto>.Success(createdDto);
             }
@@ -175,6 +140,7 @@ namespace BLL.Service
                 existing.UpdatedAt = DateTime.UtcNow;
 
                 var updated = await _inventoryRepo.UpdateAsync(existing);
+                if (updated == null) return GenericResult<InventoryDto?>.Failure("Update failed");
                 var updatedDto = MapToDto(updated);
                 return GenericResult<InventoryDto?>.Success(updatedDto, "Inventory updated successfully");
             }
@@ -205,7 +171,10 @@ namespace BLL.Service
         {
             try
             {
-                if(newQuantity < 0)
+                if (productId <= 0)
+                    return GenericResult<bool>.Failure("Invalid product ID");
+
+                if (newQuantity < 0)
                     return GenericResult<bool>.Failure("Quantity cannot be negative");
 
                 var result = await _inventoryRepo.UpdateQuantityAsync(productId, newQuantity);
@@ -221,6 +190,9 @@ namespace BLL.Service
         {
             try
             {
+                if(productId <= 0)
+                    return GenericResult<bool>.Failure("Invalid product ID");
+
                 if (quantity <= 0)
                     return GenericResult<bool>.Success(true);
 
@@ -237,9 +209,11 @@ namespace BLL.Service
         {
             try
             {
-                var inventory = await _inventoryRepo.GetByProductIdAsync(productId);
-                var stock = inventory?.Quantity ?? 0;
-                return GenericResult<int>.Success(stock);
+                if(productId <= 0)
+                    return GenericResult<int>.Failure("Invalid product ID");
+
+                var quantity = await _inventoryRepo.GetQuantityAsync(productId);
+                return GenericResult<int>.Success(quantity);
             }
             catch(Exception ex)
             {
@@ -253,11 +227,84 @@ namespace BLL.Service
             {
                 InventoryId = inventory.InventoryId,
                 ProductId = inventory.ProductId,
-                ProductName = inventory.Product?.ProductName ?? "Unknown",  // ✅ NULL SAFE
+                ProductName = inventory.Product?.ProductName ?? "Unknown",  
+                ProductImage = inventory.Product?.Image ?? string.Empty,
                 Quantity = inventory.Quantity,
                 Warehouse = inventory.Warehouse,
                 UpdatedAt = inventory.UpdatedAt
             };
+        }
+
+        public async Task<GenericResult<bool>> ProcessPaymentInventoryAsync(int orderId, string paymentStatus)
+        {
+            try
+            {
+                var orderItems = await _orderItemRepo.GetByOrderIdAsync(orderId);
+                if (orderItems == null || !orderItems.Any())
+                    return GenericResult<bool>.Failure("No order items");
+
+                foreach (var item in orderItems)
+                {
+                    var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
+                    if (inventory == null) continue;
+
+                    int newQty = inventory.Quantity;
+
+                    if (paymentStatus == "Paid")
+                    {
+                        newQty -= item.Quantity;
+
+                        if (newQty < 0)
+                            return GenericResult<bool>.Failure("Insufficient inventory");
+                    }
+                    else if (paymentStatus == "Cancelled")
+                    {
+                        newQty += item.Quantity;
+                    }
+
+                    await _inventoryRepo.UpdateQuantityAsync(item.ProductId, newQty);
+                }
+
+                return GenericResult<bool>.Success(true);
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<bool>.Failure(ex.Message);
+            }
+        }
+
+
+        public async Task DeductInventoryAsync(int orderId)
+        {
+            var items = await _orderItemRepo.GetByOrderIdAsync(orderId);
+
+
+            foreach (var item in items)
+            {
+                var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
+                if (inventory == null) continue;
+
+
+                inventory.Quantity -= item.Quantity;
+                await _inventoryRepo.UpdateAsync(inventory);
+            }
+        }
+
+
+        public async Task RestoreInventoryAsync(int orderId)
+        {
+            var items = await _orderItemRepo.GetByOrderIdAsync(orderId);
+
+
+            foreach (var item in items)
+            {
+                var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
+                if (inventory == null) continue;
+
+
+                inventory.Quantity += item.Quantity;
+                await _inventoryRepo.UpdateAsync(inventory);
+            }
         }
 
     }

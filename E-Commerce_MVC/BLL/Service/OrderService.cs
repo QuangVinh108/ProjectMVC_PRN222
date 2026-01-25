@@ -1,4 +1,5 @@
 ﻿using BLL.DTOs;
+using BLL.Helper;
 using BLL.IService;
 using DAL.Entities;
 using DAL.IRepository;
@@ -9,11 +10,13 @@ namespace BLL.Service
     {
         private readonly IOrderRepository _orderRepo;
         private readonly ICartRepository _cartRepo;
+        private readonly IInventoryService _inventoryService;
 
-        public OrderService(IOrderRepository orderRepo, ICartRepository cartRepo)
+        public OrderService(IOrderRepository orderRepo, ICartRepository cartRepo, IInventoryService _inventoryService)
         {
             _orderRepo = orderRepo;
             _cartRepo = cartRepo;
+            _inventoryService = _inventoryService;
         }
 
         public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
@@ -131,23 +134,51 @@ namespace BLL.Service
             return true;
         }
 
+        //public async Task<bool> CancelOrderAsync(int orderId, int userId)
+        //{
+        //    var order = await _orderRepo.GetByIdAsync(orderId);
+        //    if (order == null) return false;
+
+        //    // Check ownership
+        //    if (order.UserId != userId)
+        //        throw new Exception("Bạn không có quyền hủy đơn hàng này");
+
+        //    // Only allow cancellation if order is Pending
+        //    if (order.Status != "Pending")
+        //        throw new Exception("Chỉ có thể hủy đơn hàng ở trạng thái Pending");
+
+        //    order.Status = "Cancelled";
+        //    await _orderRepo.UpdateAsync(order);
+        //    return true;
+        //}
+
         public async Task<bool> CancelOrderAsync(int orderId, int userId)
         {
             var order = await _orderRepo.GetByIdAsync(orderId);
             if (order == null) return false;
 
-            // Check ownership
             if (order.UserId != userId)
                 throw new Exception("Bạn không có quyền hủy đơn hàng này");
 
-            // Only allow cancellation if order is Pending
-            if (order.Status != "Pending")
-                throw new Exception("Chỉ có thể hủy đơn hàng ở trạng thái Pending");
+            // chỉ cho phép Pending hoặc Paid
+            if (order.Status != "Pending" && order.Status != "Paid")
+                throw new Exception("Không thể hủy đơn hàng ở trạng thái hiện tại");
+
+            var oldStatus = order.Status;
 
             order.Status = "Cancelled";
             await _orderRepo.UpdateAsync(order);
+
+            // ✅ QUAN TRỌNG: chỉ hoàn kho nếu đơn ĐÃ TRỪ KHO TRƯỚC ĐÓ
+            if (oldStatus == "Paid")
+            {
+                await _inventoryService.RestoreInventoryAsync(orderId);
+            }
+
             return true;
         }
+
+
 
         // Helper method to map Order entity to OrderDto
         private OrderDto MapToOrderDto(Order order)
@@ -194,6 +225,26 @@ namespace BLL.Service
                 } : null
             };
         }
+
+
+        //public async Task<GenericResult<bool>> CancelOrderAsync(int orderId, string cancelReason)
+        //{
+        //    var order = await _orderRepo.GetByIdAsync(orderId);
+        //    if (order == null || order.Status != "Pending")
+        //        return GenericResult<bool>.Failure("Cannot cancel this order");
+
+        //    // 1. Cộng lại INVENTORY
+        //    var inventoryResult = await _inventoryService.ProcessPaymentInventoryAsync(orderId, "Cancelled");
+        //    if (!inventoryResult.IsSuccess)
+        //        return GenericResult<bool>.Failure("Inventory restore failed");
+
+        //    // 2. Update Order status
+        //    order.Status = "Cancelled";
+        //    order.Note += $"\nCancelled: {cancelReason}";
+        //    await _orderRepo.UpdateAsync(order);
+
+        //    return GenericResult<bool>.Success(true, "Order cancelled + stock restored");
+        //}
     }
 }
 
