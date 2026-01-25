@@ -1,6 +1,7 @@
 ﻿using BLL.DTOs;
 using BLL.IService;
 using DAL.IRepository;
+using DAL.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -16,17 +17,20 @@ namespace BLL.Service
         private readonly IPaymentRepository _paymentRepository;
         private readonly IConfiguration _config;
         private readonly ILogger<PaymentService> _logger;
+        private readonly IOrderRepository _orderRepository;
 
         public PaymentService(
             IInventoryService inventoryService,
             IPaymentRepository paymentRepository,
             IConfiguration config,
-            ILogger<PaymentService> logger)
+            ILogger<PaymentService> logger,
+            IOrderRepository orderRepository)
         {
             _inventoryService = inventoryService;
             _paymentRepository = paymentRepository;
             _config = config;
             _logger = logger;
+            _orderRepository = orderRepository;
         }
 
         public string CreateVnPayUrl(PaymentDto payment, HttpContext context)

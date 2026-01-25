@@ -239,58 +239,73 @@ namespace BLL.Service
         {
             try
             {
-                //1. Lấy order và order items
-                var order = await _orderRepo.GetByIdAsync(orderId);
-                if (order == null)
-                    return GenericResult<bool>.Failure("Order không tồn tại");
-
                 var orderItems = await _orderItemRepo.GetByOrderIdAsync(orderId);
                 if (orderItems == null || !orderItems.Any())
-                    return GenericResult<bool>.Failure("Order không có sản phẩm");
+                    return GenericResult<bool>.Failure("No order items");
 
-                //2. Xác định action dựa trên payment status
-                bool shouldDebut = paymentStatus == "Paid";
-
-                foreach(var orderItem in orderItems)
+                foreach (var item in orderItems)
                 {
-                    var inventory = await _inventoryRepo.GetByProductIdAsync(orderItem.ProductId);
-                    if (inventory == null)
+                    var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
+                    if (inventory == null) continue;
+
+                    int newQty = inventory.Quantity;
+
+                    if (paymentStatus == "Paid")
                     {
-                        _logger.LogWarning("Không tìm thấy inventory cho product {ProductId} trong order {OrderId}", orderItem.ProductId, orderId);
-                        continue;
+                        newQty -= item.Quantity;
+
+                        if (newQty < 0)
+                            return GenericResult<bool>.Failure("Insufficient inventory");
+                    }
+                    else if (paymentStatus == "Cancelled")
+                    {
+                        newQty += item.Quantity;
                     }
 
-                    var currentQuantity = inventory.Quantity;
-                    var newQuantity = shouldDebut
-                        ? currentQuantity - orderItem.Quantity
-                        : currentQuantity + orderItem.Quantity;
-
-                    if(shouldDebut && newQuantity < 0)
-                    {
-                        _logger.LogWarning("Không đủ stock cho product {ProductId}: cân {Quantity}, còn {Current}", orderItem.ProductId, orderItem.Quantity, currentQuantity);
-                        return GenericResult<bool>.Failure($"Không đủ hàng cho sản phẩm {orderItem.ProductId}");
-                    }
-
-                    //4. Update inventory
-                    var updateSuccess = await _inventoryRepo.UpdateQuantityAsync(orderItem.ProductId, newQuantity);
-
-                    if (!updateSuccess)
-                    {
-                        _logger.LogError("Lỗi update inventory product {ProductId}", orderItem.ProductId);
-
-                        return GenericResult<bool>.Failure("Lỗi cập nhật kho");
-                    }
+                    await _inventoryRepo.UpdateQuantityAsync(item.ProductId, newQty);
                 }
 
-                _logger.LogInformation("✅ Inventory sync OK - Order {OrderId}, Status: {Status}", orderId, paymentStatus);
                 return GenericResult<bool>.Success(true);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Inventory error - Order {OrderId}", orderId);
-                return GenericResult<bool>.Failure("Lỗi hệ thống");
-
+                return GenericResult<bool>.Failure(ex.Message);
             }
         }
+
+
+        public async Task DeductInventoryAsync(int orderId)
+        {
+            var items = await _orderItemRepo.GetByOrderIdAsync(orderId);
+
+
+            foreach (var item in items)
+            {
+                var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
+                if (inventory == null) continue;
+
+
+                inventory.Quantity -= item.Quantity;
+                await _inventoryRepo.UpdateAsync(inventory);
+            }
+        }
+
+
+        public async Task RestoreInventoryAsync(int orderId)
+        {
+            var items = await _orderItemRepo.GetByOrderIdAsync(orderId);
+
+
+            foreach (var item in items)
+            {
+                var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
+                if (inventory == null) continue;
+
+
+                inventory.Quantity += item.Quantity;
+                await _inventoryRepo.UpdateAsync(inventory);
+            }
+        }
+
     }
 }

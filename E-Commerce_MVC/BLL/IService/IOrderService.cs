@@ -1,4 +1,5 @@
 ﻿using BLL.DTOs;
+using BLL.Helper;
 
 namespace BLL.IService
 {
@@ -10,6 +11,7 @@ namespace BLL.IService
         Task<OrderDto> CreateOrderAsync(CreateOrderDto dto);
         Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus);
         Task<bool> CancelOrderAsync(int orderId, int userId);
+        //Task<GenericResult<bool>> CancelOrderAsync(int orderId, string cancelReason);
     }
 }
 

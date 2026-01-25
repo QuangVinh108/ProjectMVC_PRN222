@@ -133,6 +133,5 @@ namespace E_Commerce_MVC.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
         }
-
     }
 }
