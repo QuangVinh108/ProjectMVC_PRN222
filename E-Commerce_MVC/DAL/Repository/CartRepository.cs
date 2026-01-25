@@ -102,5 +102,48 @@ namespace DAL.Repository
             _context.CartItems.Remove(item);
             _context.SaveChanges();
         }
+
+        public async Task AddOrReplaceSingleItemAsync(int userId, int productId, int quantity)
+        {
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
+
+            if (cart == null)
+            {
+                cart = new Cart
+                {
+                    UserId = userId,
+                    CreatedAt = DateTime.Now
+                };
+                _context.Carts.Add(cart);
+                await _context.SaveChangesAsync();
+            }
+
+            // ❗ XÓA HẾT ITEM CŨ → đảm bảo cart chỉ có 1 sản phẩm
+            if (cart.CartItems.Any())
+            {
+                _context.CartItems.RemoveRange(cart.CartItems);
+                await _context.SaveChangesAsync();
+            }
+
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null)
+                throw new Exception("Sản phẩm không tồn tại");
+
+            var cartItem = new CartItem
+            {
+                CartId = cart.CartId,
+                ProductId = productId,
+                Quantity = quantity,
+                UnitPrice = product.Price
+            };
+
+            _context.CartItems.Add(cartItem);
+            cart.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+        }
+
     }
 }
