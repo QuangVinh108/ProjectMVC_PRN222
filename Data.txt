@@ -16,22 +16,163 @@ INSERT INTO Users (RoleId, UserName, Email, PasswordHash, FullName, Phone, Addre
 (2, 'lethic', 'ltc@gmail.com', '$2a$11$hashed_user_pass3', N'Lê Thị C', '0998887776', N'Cần Thơ', 0, NULL, 0, 'Local');
 GO
 
--- 3. CATEGORIES
-INSERT INTO Categories (CategoryName, ParentId, Description, IsActive) VALUES 
-(N'Điện tử', NULL, N'Các thiết bị điện tử', 1),
-(N'Thời trang', NULL, N'Quần áo và phụ kiện', 1),
-(N'Điện thoại', 1, N'Smartphone các loại', 1),
-(N'Laptop', 1, N'Máy tính xách tay', 1),
-(N'Áo Nam', 2, N'Thời trang cho nam', 1);
-GO
+-- 3.1. TẠO CÁC DANH MỤC GỐC (ParentId = NULL)
+INSERT INTO Categories (CategoryName, ParentId, Description) VALUES 
+(N'Điện thoại', NULL, N'Các thiết bị di động'), -- ID: 1
+(N'Laptop', NULL, N'Máy tính xách tay'),               -- ID: 2
+(N'Linh kiện', NULL, N'Máy tính bàn và linh kiện'), -- ID: 3
+(N'Phụ kiện', NULL, N'Tai nghe, sạc, cáp, phím chuột');  -- ID: 4
 
--- 4. PRODUCTS
-INSERT INTO Products (CategoryId, ProductName, SKU, Description, Price, Status, IsActive) VALUES 
-(3, N'iPhone 15 Pro Max', 'IP15PM-256', N'Titan tự nhiên 256GB', 34990000, 1, 1),
-(3, N'Samsung Galaxy S24 Ultra', 'SS24U-512', N'Màu xám titan 512GB', 31990000, 1, 1),
-(4, N'MacBook Air M2', 'MBA-M2', N'Chip M2 8GB/256GB', 24500000, 1, 1),
-(5, N'Áo Thun Polo', 'POLO-01', N'Cotton thoáng mát', 250000, 1, 1),
-(5, N'Quần Jean Slimfit', 'JEAN-01', N'Jean co giãn 4 chiều', 550000, 1, 1);
+-- 3.2. TẠO DANH MỤC CON CHO "ĐIỆN THOẠI" (ParentId = 1)
+INSERT INTO Categories (CategoryName, ParentId, Description) VALUES 
+(N'IPhone', 1, N'Các dòng điện thoại iPhone'),
+(N'Samsung', 1, N'Samsung Galaxy S, A, Z'),
+(N'Xiaomi', 1, N'Redmi, Xiaomi series'),
+(N'Máy tính bảng', 1, N'iPad và Android Tablet');
+
+-- 3.3 TẠO DANH MỤC CON CHO "LAPTOP" (ParentId = 2)
+INSERT INTO Categories (CategoryName, ParentId, Description) VALUES 
+(N'Laptop Gaming', 2, N'Cấu hình cao chơi game'),
+(N'Laptop Văn phòng', 2, N'Mỏng nhẹ, pin trâu'),
+(N'Macbook', 2, N'Apple Macbook Air, Pro');
+
+-- 3.4. TẠO DANH MỤC CON CHO "LINH KIỆN PC" (ParentId = 3)
+INSERT INTO Categories (CategoryName, ParentId, Description) VALUES 
+(N'CPU - Vi xử lý', 3, N'Intel, AMD'),
+(N'VGA - Card màn hình', 3, N'NVIDIA, Radeon'),
+(N'Mainboard', 3, N'Bo mạch chủ'),
+(N'RAM', 3, N'Bộ nhớ trong');
+
+-- 3.5. TẠO DANH MỤC CON CHO "PHỤ KIỆN" (ParentId = 4)
+INSERT INTO Categories (CategoryName, ParentId, Description) VALUES 
+(N'Tai nghe', 4, N'Headphone, Earphone'),
+(N'Bàn phím', 4, N'Phím cơ, phím thường'),
+(N'Chuột', 4, N'Chuột gaming, văn phòng');
+
+
+-- 4.1. ĐIỆN THOẠI (IPHONE & SAMSUNG)
+INSERT INTO Products (CategoryId, ProductName, SKU, Price, Description, Image, Status, IsActive)
+VALUES 
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'IPhone'), 
+    N'iPhone 15 Pro Max 256GB Titan Tự Nhiên', 
+    'IP15PM-256-TI', 
+    34990000, 
+    N'Màn hình 6.7 inch Super Retina XDR, Chip A17 Pro, Khung viền Titan, Cổng USB-C 3.0.', 
+    '/images/products/iphone-15-pro-max.jpg',
+    1, 1
+),
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'IPhone'), 
+    N'iPhone 14 Plus 128GB VN/A', 
+    'IP14P-128-BL', 
+    21500000, 
+    N'Màn hình lớn, Pin trâu, Camera kép cải tiến.', 
+    '/images/products/iphone-14-plus.jpg',
+    1, 1
+),
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'Samsung'), 
+    N'Samsung Galaxy S24 Ultra 5G 512GB', 
+    'SS-S24U-512-GR', 
+    31990000, 
+    N'Quyền năng Galaxy AI, bút S-Pen, Camera zoom 100x, Chip Snapdragon 8 Gen 3 for Galaxy.', 
+    '/images/products/samsung-s24-ultra.jpg',
+    1, 1
+);
+
+-- 4.2. LAPTOP (GAMING & MACBOOK)
+INSERT INTO Products (CategoryId, ProductName, SKU, Price, Description, Image, Status, IsActive)
+VALUES 
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'Laptop Gaming'), 
+    N'Laptop Asus ROG Strix G16 G614J', 
+    'ASUS-ROG-G16', 
+    32500000, 
+    N'CPU: Intel Core i7 13650HX, RAM: 16GB, SSD: 512GB, VGA: RTX 4050 6GB, Màn hình: 165Hz.', 
+    '/images/products/asus-rog-strix.jpg',
+    1, 1
+),
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'Laptop Gaming'), 
+    N'Laptop Acer Nitro 5 Tiger', 
+    'ACER-NITRO5-AN515', 
+    19990000, 
+    N'Chiến thần gaming giá rẻ. CPU i5 12500H, RTX 3050, Tản nhiệt 2 quạt mát rượi.', 
+    '/images/products/acer-nitro-5.jpg',
+    1, 1
+),
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'Macbook'), 
+    N'MacBook Air M2 2022 8GB/256GB', 
+    'MBA-M2-13-MID', 
+    24500000, 
+    N'Thiết kế mới vuông vức, màn hình tai thỏ, chip M2 mạnh mẽ, màu Midnight sang trọng.', 
+    '/images/products/macbook-air-m2.jpg',
+    1, 1
+),
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'Macbook'), 
+    N'MacBook Pro 14 inch M3 Pro', 
+    'MBP-M3P-14-BLK', 
+    49990000, 
+    N'Dành cho dân đồ họa chuyên nghiệp. Chip M3 Pro, 18GB RAM, 512GB SSD.', 
+    '/images/products/macbook-pro-m3.jpg',
+    1, 1
+);
+
+-- 4.3. LINH KIỆN PC (VGA & CPU)
+INSERT INTO Products (CategoryId, ProductName, SKU, Price, Description, Image, Status, IsActive)
+VALUES 
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName LIKE N'%VGA%'), 
+    N'Card màn hình ASUS ROG Strix GeForce RTX 4090 24GB', 
+    'VGA-RTX4090-OC', 
+    55000000, 
+    N'Chiếc card đồ họa mạnh nhất thế giới hiện tại. 24GB VRAM, Cân mọi game 4K, 8K.', 
+    '/images/products/vga-4090.jpg',
+    1, 1
+),
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName LIKE N'%CPU%'), 
+    N'CPU Intel Core i9-14900K', 
+    'CPU-INTEL-I9-14900K', 
+    14500000, 
+    N'Vi xử lý thế hệ 14 mới nhất. 24 nhân 32 luồng, xung nhịp lên tới 6.0GHz.', 
+    '/images/products/cpu-i9.jpg',
+    1, 1
+);
+
+-- 4.4. PHỤ KIỆN (TAI NGHE & PHÍM CHUỘT)
+INSERT INTO Products (CategoryId, ProductName, SKU, Price, Description, Image, Status, IsActive)
+VALUES 
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'Tai nghe'), 
+    N'Tai nghe Apple AirPods Pro 2 USB-C', 
+    'APPLE-AIRPODS-PRO2', 
+    5990000, 
+    N'Chống ồn chủ động gấp 2 lần, cổng sạc USB-C mới, âm thanh không gian.', 
+    '/images/products/airpods-pro-2.jpg',
+    1, 1
+),
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'Bàn phím'), 
+    N'Bàn phím cơ Keychron K2 Pro', 
+    'KEYCHRON-K2P', 
+    2650000, 
+    N'Bàn phím cơ không dây, hỗ trợ QMK/VIA, Hot-swap, tương thích hoàn hảo Mac/Win.', 
+    '/images/products/keychron-k2.jpg',
+    1, 1
+),
+(
+    (SELECT CategoryId FROM Categories WHERE CategoryName = N'Chuột'), 
+    N'Chuột Logitech MX Master 3S', 
+    'LOGI-MXM3S', 
+    2100000, 
+    N'Chuột văn phòng tốt nhất thế giới. Click yên tĩnh, cuộn vô cực, pin 70 ngày.', 
+    '/images/products/logitech-mx3s.jpg',
+    1, 1
+);
 GO
 
 -- 5. INVENTORIES

@@ -19,6 +19,7 @@ namespace DAL.IRepository
         Task AddUserAsync(User user);
         Task<User> GetUserByUserName(string username);
         User GetUserByEmail(string email);
+        User GetUserByCccd(string cccdNumber);
 
         // ===== FOR AUTHSERVICE =====
 

@@ -22,6 +22,11 @@ namespace DAL.Repository
         {
             return _context.Products.Include(p => p.Category).ToList();
         }
+        public IQueryable<Product> GetAllQueryable()
+        {
+            // Chưa execute SQL ngay, chỉ mới chuẩn bị câu lệnh
+            return _context.Products.Include(p => p.Category).AsQueryable();
+        }
 
         public Product GetProductById(int id)
         {

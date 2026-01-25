@@ -1,4 +1,5 @@
-﻿using DAL.Entities;
+﻿using BLL.DTOs;
+using DAL.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ namespace BLL.IService
 {
     public interface ICategoryService
     {
-        IEnumerable<Category> GetAll();
+        IEnumerable<CategoryDTO> GetAll();
+        void Add(CategoryDTO categoryDto);
     }
 }

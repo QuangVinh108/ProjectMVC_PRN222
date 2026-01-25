@@ -123,6 +123,11 @@ namespace DAL.Repository
         {
             return _context.Users.FirstOrDefault(u => u.Email == email);
         }
+
+        public User GetUserByCccd(string cccdNumber)
+        {
+            return _context.Users.FirstOrDefault(u => u.CccdNumber == cccdNumber && u.IsIdentityVerified == true);
+        }
         public async Task<User?> GetByIdWithRoleAsync(int userId)
         {
             return await _context.Users

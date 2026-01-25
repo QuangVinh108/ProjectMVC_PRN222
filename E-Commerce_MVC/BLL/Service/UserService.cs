@@ -114,14 +114,17 @@ namespace BLL.Service
             return await _userRepository.GetUserByUserName(username);
         }
 
+        public User GetUserByCccd(string cccdNumber)
+        {
+            return _userRepository.GetUserByCccd(cccdNumber);
+        }
+
         public void UpdateProfile(int userId, UpdateProfileViewModel model)
         {
             var user = _userRepository.GetUserById(userId);
             if (user == null) 
                 throw new Exception("Không tìm thấy người dùng.");
 
-            // --- LOGIC MỚI: KIỂM TRA EMAIL ---
-            // Chỉ kiểm tra nếu người dùng nhập email KHÁC với email hiện tại
             if (model.Email != user.Email)
             {
                 var existingUser = _userRepository.GetUserByEmail(model.Email);
@@ -129,16 +132,14 @@ namespace BLL.Service
                 {
                     throw new Exception("Email này đã được sử dụng bởi tài khoản khác!");
                 }
-                user.Email = model.Email; // Nếu hợp lệ thì cập nhật
+                user.Email = model.Email; 
             }
 
             if (!user.IsIdentityVerified)
             {
                 user.FullName = model.FullName;
             }
-
-            // Cập nhật các thông tin khác
-            //user.FullName = model.FullName;
+           
             user.Phone = model.Phone;
             user.Address = model.Address;
 

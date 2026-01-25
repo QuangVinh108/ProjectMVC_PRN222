@@ -6,30 +6,33 @@ namespace E_Commerce_MVC.Controllers
     public class ShopController : Controller
     {
         private readonly IProductService _productService;
+        private readonly ICategoryService _categoryService;
 
-        public ShopController(IProductService productService)
+        public ShopController(IProductService productService, ICategoryService categoryService)
         {
             _productService = productService;
+            _categoryService = categoryService;
         }
 
-        // Khách hàng xem dạng Lưới (Grid)
-        public IActionResult Index(string searchTerm)
+        public IActionResult Index(string searchTerm, int? categoryId, decimal? minPrice, decimal? maxPrice, string sortOrder)
         {
-            // 1. Lấy tất cả sản phẩm Active
-            var products = _productService.GetAll().Where(p => p.Status == 1);
-
-            // 2. Xử lý tìm kiếm (Nếu có từ khóa)
-            if (!string.IsNullOrEmpty(searchTerm))
+            if (string.IsNullOrEmpty(sortOrder))
             {
-                // Chuyển về chữ thường để tìm không phân biệt hoa thường
-                products = products.Where(p => p.ProductName.ToLower().Contains(searchTerm.ToLower()));
-
-                // Lưu lại từ khóa để hiển thị lại trên thanh tìm kiếm
-                ViewBag.CurrentFilter = searchTerm;
+                sortOrder = "price_desc";
             }
 
-            // 3. Trả về list đã lọc
-            return View(products.ToList());
+            var products = _productService.GetFilteredProducts(searchTerm, categoryId, minPrice, maxPrice, sortOrder);
+
+            var categories = _categoryService.GetAll();
+            ViewBag.Categories = categories;
+
+            ViewBag.CurrentSearch = searchTerm;
+            ViewBag.CurrentCategory = categoryId;
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+            ViewBag.CurrentSort = sortOrder; // Để dropdown biết đang sort theo kiểu nào
+
+            return View(products);
         }
 
         // Xem chi tiết sản phẩm

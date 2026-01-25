@@ -20,8 +20,7 @@
                     <h4 class="mb-0"><i class="bi bi-plus-circle-fill me-2"></i> Thêm sản phẩm mới</h4>
                 </div>
                 <div class="card-body p-4">
-                    <form asp-action="Create" method="post" enctype="multipart/form-data">
-
+                    <form asp-action="Create" asp-route-returnParentId="@ViewBag.ReturnParentId" method="post" enctype="multipart/form-data">
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
                         <div class="row">
@@ -58,6 +57,12 @@
                                     <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" id="imageInput" />
                                     <span asp-validation-for="ImageFile" class="text-danger small"></span>
                                     <div class="form-text text-muted">Chấp nhận file ảnh (jpg, png, webp...)</div>
+
+                                    <div id="image-preview-container" class="mt-3 text-center d-none">
+                                        <img id="image-preview" src="#" alt="Ảnh sản phẩm Preview"
+                                             class="img-fluid border rounded shadow-sm"
+                                             style="max-height: 250px; object-fit: contain;" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -81,9 +86,10 @@
                         <hr class="my-4" />
 
                         <div class="d-flex justify-content-end gap-2">
-                            <a asp-action="Index" class="btn btn-secondary">
+                            <a href="@Url.Action("Index", new { parentId = ViewBag.ReturnParentId })" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left"></i> Quay lại
                             </a>
+
                             <button type="submit" class="btn btn-success">
                                 <i class="bi bi-save"></i> Lưu sản phẩm
                             </button>
@@ -104,6 +110,22 @@
         document.getElementById('imageInput').addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (!file) return;
+
+            // ===========================================
+            // 1. HIỂN THỊ ẢNH PREVIEW NGAY LẬP TỨC
+            // ===========================================
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = document.getElementById('image-preview');
+                img.src = e.target.result;
+                // Hiện khung ảnh lên
+                document.getElementById('image-preview-container').classList.remove('d-none');
+            }
+            reader.readAsDataURL(file);
+
+            // ===========================================
+            // 2. GỌI AI PHÂN TÍCH (CODE CŨ CỦA BẠN)
+            // ===========================================
 
             // Show loading spinner
             document.getElementById('ai-loading').classList.remove('d-none');
@@ -131,7 +153,6 @@
                     // Intelligent category selection
                     if(data.category) {
                         const select = document.getElementById('inputCategory');
-                        // Find option that contains the category keyword returned by AI
                         for (let i = 0; i < select.options.length; i++) {
                             if (select.options[i].text.toLowerCase().includes(data.category.toLowerCase())) {
                                 select.selectedIndex = i;
@@ -141,12 +162,12 @@
                     }
                 } else {
                     console.error(res.message);
-                    alert("Không thể phân tích ảnh: " + res.message);
+                    // Không alert lỗi nếu AI fail nhẹ, để user tự nhập
                 }
             })
             .catch(err => {
                 console.error(err);
-                alert("Đã xảy ra lỗi khi kết nối với AI.");
+                // alert("Đã xảy ra lỗi khi kết nối với AI.");
             })
             .finally(() => {
                 // Hide loading spinner

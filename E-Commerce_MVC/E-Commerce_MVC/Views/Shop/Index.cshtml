@@ -2,136 +2,420 @@
 
 @{
     ViewData["Title"] = "Cửa hàng";
+
+    // HÀM HELPER: Tạo URL sắp xếp nhưng vẫn GIỮ NGUYÊN các bộ lọc hiện tại (Search, Category, Price)
+    // Giúp người dùng không bị mất bộ lọc khi bấm sắp xếp giá
+    string GetSortUrl(string sortOrder)
+    {
+        return Url.Action("Index", new
+        {
+            searchTerm = ViewBag.CurrentSearch,
+            categoryId = ViewBag.CurrentCategory,
+            minPrice = ViewBag.MinPrice,
+            maxPrice = ViewBag.MaxPrice,
+            sortOrder = sortOrder
+        });
+    }
 }
 
-<div class="bg-light py-4 mb-4">
+<form id="csrf-token-form" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="container-fluid bg-primary bg-gradient text-white py-5 mb-5" style="--bs-bg-opacity: .9;">
     <div class="container text-center">
-        <h1 class="fw-bold mb-0">Cửa hàng trực tuyến</h1>
-        <p class="text-muted mb-0">Khám phá các sản phẩm công nghệ & thời trang mới nhất</p>
+        <h1 class="display-5 fw-bold">Cửa Hàng Trực Tuyến</h1>
+        <p class="lead mb-0 opacity-75">Sản phẩm công nghệ & thời trang chính hãng - Giá tốt nhất</p>
     </div>
 </div>
 
 <div class="container mb-5">
-    <div class="row align-items-center mb-4 g-3">
-        <div class="col-md-6 col-lg-5">
-            <form asp-controller="Shop" asp-action="Index" method="get">
-                <div class="input-group shadow-sm">
-                    <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-search text-muted"></i>
-                    </span>
-                    <input type="text" name="searchTerm" class="form-control border-start-0 border-end-0"
-                           placeholder="Bạn muốn tìm gì hôm nay?"
-                           value="@ViewBag.CurrentFilter">
+    <div class="row">
 
-                    @if (!string.IsNullOrEmpty(ViewBag.CurrentFilter as string))
-                    {
-                        <a asp-action="Index" class="btn btn-white border border-start-0 text-danger" title="Xóa tìm kiếm">
-                            <i class="bi bi-x-lg"></i>
-                        </a>
-                    }
-                    <button class="btn btn-primary px-4" type="submit">Tìm</button>
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 20px; z-index: 1;">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="fw-bold"><i class="bi bi-funnel-fill text-primary"></i> Bộ lọc</h5>
                 </div>
-            </form>
-        </div>
+                <div class="card-body">
 
-        <div class="col-md-auto ms-auto"></div>
+                    <form asp-action="Index" method="get">
+                        @if (ViewBag.CurrentCategory != null)
+                        {
+                            <input type="hidden" name="categoryId" value="@ViewBag.CurrentCategory" />
+                        }
+                        @if (ViewBag.CurrentSort != null)
+                        {
+                            <input type="hidden" name="sortOrder" value="@ViewBag.CurrentSort" />
+                        }
 
-        <div class="col-md-auto">
-            <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle shadow-sm w-100" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-sort-down me-1"></i> Sắp xếp theo
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow">
-                    <li><a class="dropdown-item" href="#">Mới nhất</a></li>
-                    <li><a class="dropdown-item" href="#">Giá: Thấp đến Cao</a></li>
-                    <li><a class="dropdown-item" href="#">Giá: Cao đến Thấp</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    @if (!string.IsNullOrEmpty(ViewBag.CurrentFilter as string))
-    {
-        <div class="mb-3">
-            <span class="text-muted">Kết quả tìm kiếm cho: </span>
-            <span class="fw-bold text-dark">"@ViewBag.CurrentFilter"</span>
-            <span class="badge bg-secondary rounded-pill ms-2">@Model.Count() sản phẩm</span>
-        </div>
-    }
-
-    @if (Model != null && Model.Any())
-    {
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-            @foreach (var item in Model)
-            {
-                <div class="col">
-                    <div class="card h-100 border-0 shadow-hover product-card">
-                        <div class="position-relative overflow-hidden bg-light ratio ratio-1x1 rounded-top">
-                            <a asp-action="Details" asp-route-id="@item.ProductId">
-                                @if (!string.IsNullOrEmpty(item.Image))
-                                {
-                                    <img src="@item.Image" class="card-img-top object-fit-cover product-img" alt="@item.ProductName">
-                                }
-                                else
-                                {
-                                    <img src="https://placehold.co/400x400?text=No+Image" class="card-img-top object-fit-cover product-img" alt="@item.ProductName">
-                                }
-                            </a>
-
-                        </div>
-
-                        <div class="card-body d-flex flex-column">
-                            <div class="small text-muted mb-1 text-uppercase">@item.CategoryName</div>
-
-                            <h5 class="card-title text-truncate mb-1">
-                                <a asp-action="Details" asp-route-id="@item.ProductId" class="text-decoration-none text-dark stretched-link">
-                                    @item.ProductName
-                                </a>
-                            </h5>
-
-                            <div class="mt-auto pt-2">
-                                <span class="fw-bold text-primary fs-5">@item.Price.ToString("N0") ₫</span>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted">TỪ KHÓA</label>
+                            <div class="input-group">
+                                <input type="text" name="searchTerm" class="form-control" placeholder="Tìm tên sản phẩm..." value="@ViewBag.CurrentSearch">
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
                             </div>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">KHOẢNG GIÁ (VNĐ)</label>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="number" name="minPrice" class="form-control form-control-sm" placeholder="Thấp nhất" value="@ViewBag.MinPrice">
+                                <span>-</span>
+                                <input type="number" name="maxPrice" class="form-control form-control-sm" placeholder="Cao nhất" value="@ViewBag.MaxPrice">
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm w-100" type="submit">Áp dụng</button>
+                        </div>
+                    </form>
+
+                    <div class="mb-4 mt-4">
+                        <label class="form-label fw-bold small text-muted">DANH MỤC</label>
+
+                        <div class="list-group list-group-flush mb-2">
+                            <a href="@Url.Action("Index", new { searchTerm = ViewBag.CurrentSearch, minPrice = ViewBag.MinPrice, maxPrice = ViewBag.MaxPrice, sortOrder = ViewBag.CurrentSort })"
+                               class="list-group-item list-group-item-action border-0 px-0 py-2 fw-bold @(ViewBag.CurrentCategory == null ? "text-primary" : "text-dark")">
+                                <i class="bi bi-grid-fill me-2"></i> Tất cả sản phẩm
+                            </a>
+                        </div>
+
+                        @{
+                            // Ép kiểu ViewBag về List để dễ xử lý LINQ
+                            // Lưu ý: Thay BLL.DTOs.CategoryDTO bằng tên class DTO thực tế của bạn
+                            var allCats = (ViewBag.Categories as IEnumerable<dynamic>)?.ToList();
+
+                            if (allCats != null)
+                            {
+                                // 1. Lấy danh sách CHA (ParentId là null)
+                                var parentCats = allCats.Where(c => c.ParentId == null).ToList();
+
+                                <div class="accordion accordion-flush" id="categoryAccordion">
+                                    @foreach (var parent in parentCats)
+                                    {
+                                        // 2. Lấy danh sách CON của cha hiện tại
+                                        var childCats = allCats.Where(c => c.ParentId == parent.CategoryId).ToList();
+
+                                        // Kiểm tra xem danh mục hiện tại có đang được chọn không để mở Accordion ra
+                                        bool isActiveParent = (ViewBag.CurrentCategory == parent.CategoryId);
+                                        bool isActiveChild = childCats.Any(c => c.CategoryId == ViewBag.CurrentCategory);
+                                        bool expand = isActiveParent || isActiveChild;
+
+                                        <div class="accordion-item border-0">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button shadow-none px-0 py-2 @(expand ? "" : "collapsed") @(isActiveParent ? "text-primary fw-bold" : "text-dark bg-white")"
+                                                        type="button"
+                                                        data-bs-toggle="collapse"
+                                                        data-bs-target="#cat-@parent.CategoryId"
+                                                        aria-expanded="@(expand ? "true" : "false")">
+
+                                                    <span onclick="window.location.href='@Url.Action("Index", new { categoryId = parent.CategoryId, searchTerm = ViewBag.CurrentSearch, sortOrder = ViewBag.CurrentSort })'; event.stopPropagation();">
+                                                        @parent.CategoryName
+                                                    </span>
+                                                </button>
+                                            </h2>
+
+                                            <div id="cat-@parent.CategoryId" class="accordion-collapse collapse @(expand ? "show" : "")" data-bs-parent="#categoryAccordion">
+                                                <div class="accordion-body py-1 ps-3">
+                                                    <ul class="list-unstyled mb-0 border-start ps-3">
+                                                        @foreach (var child in childCats)
+                                                        {
+                                                            <li class="mb-1">
+                                                                <a href="@Url.Action("Index", new { categoryId = child.CategoryId, searchTerm = ViewBag.CurrentSearch, minPrice = ViewBag.MinPrice, maxPrice = ViewBag.MaxPrice, sortOrder = ViewBag.CurrentSort })"
+                                                                   class="text-decoration-none d-block py-1 @(ViewBag.CurrentCategory == child.CategoryId ? "text-primary fw-bold" : "text-secondary hover-primary")">
+                                                                    @child.CategoryName
+                                                                </a>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
                     </div>
+
+                    <div class="text-center mt-3 pt-3 border-top">
+                        <a href="@Url.Action("Index")" class="btn btn-sm btn-link text-decoration-none text-danger">
+                            <i class="bi bi-arrow-counterclockwise"></i> Xóa tất cả bộ lọc
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+
+            <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border">
+                <div>
+                    <span class="fw-bold text-dark">Hiển thị @(Model?.Count() ?? 0) sản phẩm</span>
+                    @if (!string.IsNullOrEmpty(ViewBag.CurrentSearch))
+                    {
+                        <span class="text-muted ms-1 small">(Kết quả tìm kiếm cho: "<strong>@ViewBag.CurrentSearch</strong>")</span>
+                    }
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn btn-white border dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Sắp xếp:
+                        <span class="fw-bold text-primary">
+                            @(ViewBag.CurrentSort == "price_asc" ? "Giá tăng dần" : "Giá giảm dần")
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li>
+                            <a class="dropdown-item @(ViewBag.CurrentSort == "price_desc" ? "active" : "")"
+                               href="@GetSortUrl("price_desc")">
+                               Giá giảm dần
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item @(ViewBag.CurrentSort == "price_asc" ? "active" : "")"
+                               href="@GetSortUrl("price_asc")">
+                               Giá tăng dần
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+                    @foreach (var item in Model)
+                    {
+                        <div class="col">
+                            <div class="card h-100 border-0 shadow-sm product-card">
+
+                                <div class="position-relative overflow-hidden bg-white border-bottom rounded-top product-img-container">
+
+                                    <span class="badge bg-danger position-absolute top-0 start-0 m-3 z-2 shadow-sm">HOT</span>
+
+                                    <a asp-action="Details" asp-route-id="@item.ProductId" class="d-block w-100 h-100">
+                                        <img src="@(string.IsNullOrEmpty(item.Image) ? "https://placehold.co/400x400?text=No+Image" : item.Image)"
+                                             class="card-img-top object-fit-contain w-100 h-100 p-3 product-img"
+                                             alt="@item.ProductName">
+                                    </a>
+
+                                    <div class="product-actions position-absolute bottom-0 start-0 w-100 p-3 d-flex justify-content-center gap-2">
+                                        <button class="btn btn-light rounded-circle shadow-sm btn-add-cart"
+                                                title="Thêm vào giỏ"
+                                                onclick="addToCart(@item.ProductId, this)">
+                                            <i class="bi bi-cart-plus text-primary fs-5"></i>
+                                        </button>
+
+                                        <button class="btn btn-light rounded-circle shadow-sm" title="Yêu thích">
+                                            <i class="bi bi-heart text-danger fs-5"></i>
+                                        </button>
+
+                                        <a asp-action="Details" asp-route-id="@item.ProductId" class="btn btn-light rounded-circle shadow-sm" title="Xem chi tiết">
+                                            <i class="bi bi-eye text-dark fs-5"></i>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="card-body d-flex flex-column p-3">
+                                    <div class="small text-muted text-uppercase mb-1 fw-bold" style="font-size: 0.75rem;">@item.CategoryName</div>
+
+                                    <h6 class="card-title fw-bold text-truncate mb-2">
+                                        <a asp-action="Details" asp-route-id="@item.ProductId" class="text-decoration-none text-dark hover-primary">
+                                            @item.ProductName
+                                        </a>
+                                    </h6>
+
+                                    <div class="mb-2 text-warning small">
+                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                                    </div>
+
+                                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-primary fs-5">@item.Price.ToString("N0") ₫</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 bg-white rounded shadow-sm">
+                    <div class="mb-3 opacity-25">
+                        <i class="bi bi-box-seam display-1"></i>
+                    </div>
+                    <h4 class="fw-bold">Không tìm thấy sản phẩm nào</h4>
+                    <p class="text-muted">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
+                    <a href="@Url.Action("Index")" class="btn btn-primary px-4 rounded-pill mt-2">
+                        <i class="bi bi-arrow-repeat"></i> Xóa bộ lọc & Tải lại
+                    </a>
                 </div>
             }
         </div>
-    }
-    else
-    {
-        <div class="text-center py-5 bg-light rounded-3">
-            <div class="mb-3">
-                <i class="bi bi-search display-1 text-secondary opacity-50"></i>
+    </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="cartToast" class="toast align-items-center text-white bg-success border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fs-6 fw-bold">
+                <i class="bi bi-check-circle-fill me-2"></i> Đã thêm vào giỏ hàng!
             </div>
-            <h4 class="fw-bold">Không tìm thấy sản phẩm nào</h4>
-            <p class="text-muted">Hãy thử từ khóa khác hoặc xem danh mục phổ biến.</p>
-            <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-primary mt-2">
-                Xem tất cả sản phẩm
-            </a>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
-    }
+    </div>
 </div>
 
 <style>
-    /* Hiệu ứng nâng thẻ Card */
-    .shadow-hover {
-        transition: all 0.3s ease;
-        border: 1px solid #eee;
+    /* 1. Hiệu ứng Hover Link */
+    .hover-primary:hover {
+        color: var(--bs-primary) !important;
+        transition: color 0.2s;
     }
 
-        .shadow-hover:hover {
+    /* 2. Product Card Animation */
+    .product-card {
+        transition: all 0.3s ease-in-out;
+    }
+
+        .product-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-            border-color: transparent;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
         }
 
-    /* Zoom ảnh nhẹ */
+    /* 3. Zoom ảnh khi hover */
     .product-img {
-        transition: transform 0.5s ease;
+        transition: transform 0.4s ease;
     }
 
-    .shadow-hover:hover .product-img {
-        transform: scale(1.05);
+    .product-card:hover .product-img {
+        transform: scale(1.08);
     }
+
+    /* 4. Action Buttons (Trượt từ dưới lên) */
+    .product-actions {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        background: linear-gradient(to top, rgba(0,0,0,0.05), transparent);
+    }
+
+    .product-card:hover .product-actions {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* 5. Style nút tròn */
+    .product-actions .btn {
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+        .product-actions .btn:hover {
+            background-color: var(--bs-primary);
+            color: white !important;
+            border-color: var(--bs-primary);
+        }
+
+            .product-actions .btn:hover i {
+                color: white !important;
+            }
+
+    /* 6. Loading State Button */
+    .btn-add-cart:disabled {
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+
+    .product-img-container {
+        height: 280px; /* Bạn có thể chỉnh số này (250px - 300px) tùy ý */
+        width: 100%;
+        background-color: #fff; /* Nền trắng để ảnh PNG trong suốt không bị đen/xám */
+    }
+
+        /* Đảm bảo ảnh luôn nằm giữa và không bị méo */
+        .product-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Quan trọng: Giữ tỉ lệ ảnh, không bị kéo dãn */
+        }
 </style>
+
+@section Scripts {
+    <script>
+        // --- HÀM ADD TO CART (AJAX) ---
+        async function addToCart(productId, btnElement) {
+
+            // 1. Lưu lại nội dung nút cũ & Bật Loading
+            const originalContent = btnElement.innerHTML;
+            btnElement.disabled = true;
+            btnElement.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status"></span>';
+
+            // 2. Chuẩn bị dữ liệu Form Data
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('quantity', 1);
+
+            // Lấy Token bảo mật từ form ẩn (Quan trọng!)
+            const tokenInput = document.querySelector('#csrf-token-form input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+            formData.append('__RequestVerificationToken', token);
+
+            try {
+                // 3. Gửi Request AJAX
+                const res = await fetch('/Cart/Add', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest', // Báo hiệu là AJAX request
+                        'RequestVerificationToken': token
+                    },
+                    body: formData
+                });
+
+                if (!res.ok) throw new Error('Request failed');
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // === THÀNH CÔNG ===
+
+                    // a. Cập nhật Badge trên Header (số lượng giỏ hàng)
+                    const badge = document.getElementById('cartBadge');
+                    if (badge) {
+                        badge.textContent = data.count ?? badge.textContent;
+                        badge.style.display = (data.count ?? 0) > 0 ? 'block' : 'none';
+                    }
+
+                    // b. Đổi icon nút thành dấu tích xanh
+                    btnElement.innerHTML = '<i class="bi bi-check-lg text-success fw-bold fs-4"></i>';
+
+                    // c. Hiện Toast thông báo
+                    const toastEl = document.getElementById('cartToast');
+                    const toast = new bootstrap.Toast(toastEl);
+                    toast.show();
+
+                    // d. Reset nút về trạng thái cũ sau 1.5 giây
+                    setTimeout(() => {
+                        btnElement.innerHTML = originalContent;
+                        btnElement.disabled = false;
+                    }, 1500);
+
+                } else {
+                    // === LỖI LOGIC (Ví dụ: Hết hàng) ===
+                    alert(data.error || 'Có lỗi xảy ra!');
+                    btnElement.innerHTML = originalContent;
+                    btnElement.disabled = false;
+                }
+
+            } catch (err) {
+                console.error(err);
+
+                alert('Lỗi kết nối! Vui lòng thử lại.');
+                btnElement.innerHTML = originalContent;
+                btnElement.disabled = false;
+            }
+        }
+    </script>
+}

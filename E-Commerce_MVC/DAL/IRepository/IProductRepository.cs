@@ -10,6 +10,7 @@ namespace DAL.IRepository
     public interface IProductRepository
     {
         IEnumerable<Product> GetAllProducts();
+        IQueryable<Product> GetAllQueryable();
         Product GetProductById(int id);
         void AddProduct(Product product);
         void UpdateProduct(Product product);

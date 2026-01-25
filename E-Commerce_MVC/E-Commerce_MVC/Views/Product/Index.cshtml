@@ -3,131 +3,221 @@
 
 @{
     ViewData["Title"] = "Quản lý sản phẩm";
+
+    // Categorize data directly in the View
+    var allCats = ViewBag.Categories as IEnumerable<dynamic>;
+    var parentCats = allCats?.Where(c => c.ParentId == null).ToList();
+
+    int? currentParent = ViewBag.CurrentParentId;
+    int? currentChild = ViewBag.CurrentCategoryId;
 }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary fw-bold"><i class="bi bi-box-seam-fill"></i> Quản lý sản phẩm</h2>
+        <div>
+            <h2 class="text-primary fw-bold mb-2"><i class="bi bi-box-seam-fill"></i> Quản lý sản phẩm</h2>
 
-        <a asp-action="Create" class="btn btn-success shadow-sm">
-            <i class="bi bi-plus-lg"></i> Thêm mới
-        </a>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="@Url.Action("Index")" class="text-decoration-none fw-bold">
+                            <i class="bi bi-house-door"></i> Tổng quan
+                        </a>
+                    </li>
+                    @if (currentParent.HasValue)
+                    {
+                        var parentName = parentCats?.FirstOrDefault(c => c.CategoryId == currentParent)?.CategoryName;
+                        <li class="breadcrumb-item active" aria-current="page">@parentName</li>
+                    }
+                </ol>
+            </nav>
+        </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show">
             <i class="bi bi-check-circle me-2"></i> @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
-    @if (Model != null && Model.Any())
+    @if (!currentParent.HasValue)
     {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="text-muted fw-bold mb-0">Chọn danh mục để quản lý:</h5>
+
+            <a asp-controller="Category" asp-action="Create" class="btn btn-outline-primary shadow-sm">
+                <i class="bi bi-folder-plus"></i> Thêm danh mục
+            </a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+            @if (parentCats != null)
+            {
+                foreach (var cat in parentCats)
+                {
+                    <div class="col">
+                        <a href="@Url.Action("Index", new { parentId = cat.CategoryId })" class="text-decoration-none">
+                            <div class="card h-100 border-0 shadow-sm category-card text-center py-4">
+                                <div class="card-body">
+                                    <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                                        @if (cat.CategoryName.Contains("Điện thoại"))
+                                        {
+                                            <i class="bi bi-phone fs-2"></i>
+                                        }
+                                        else if (cat.CategoryName.Contains("Laptop"))
+                                        {
+
+                                            <i class="bi bi-laptop fs-2"></i>
+                                        }
+                                        else if (cat.CategoryName.Contains("Linh kiện"))
+                                        {
+
+                                            <i class="bi bi-cpu fs-2"></i>
+                                        }
+                                        else
+                                        {
+
+                                            <i class="bi bi-headphones fs-2"></i>
+                                        }
+                                    </div>
+                                    <h5 class="fw-bold text-dark">@cat.CategoryName</h5>
+                                    <span class="badge bg-light text-secondary border mt-2">Quản lý ngay &rarr;</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            }
+        </div>
+    }
+
+    @if (currentParent.HasValue)
+    {
+        var childCats = allCats?.Where(c => c.ParentId == currentParent).ToList();
+
         <div class="card shadow-sm border-0">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped align-middle mb-0">
-                        <thead class="table-dark text-nowrap">
-                            <tr>
-                                <th class="text-center" style="width: 80px;">Hình ảnh</th>
-                                <th>Tên sản phẩm</th>
-                                <th>Mã SKU</th>
-                                <th>Danh mục</th>
-                                <th class="text-end">Giá bán</th>
-                                <th class="text-center">Trạng thái</th>
-                                <th class="text-center" style="width: 120px;">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                <tr>
-                                    <td class="text-center">
-                                        @if (!string.IsNullOrEmpty(item.Image))
-                                        {
-                                            <img src="@item.Image" alt="Product Img"
-                                                 style="width: 50px; height: 50px; object-fit: cover;"
-                                                 class="rounded border bg-white" />
-                                        }
-                                        else
-                                        {
-                                            <div class="d-flex align-items-center justify-content-center rounded border bg-light text-secondary"
-                                                 style="width: 50px; height: 50px;">
-                                                <i class="bi bi-image"></i>
-                                            </div>
-                                        }
-                                    </td>
 
-                                    <td>
-                                        <span class="fw-bold text-primary">@item.ProductName</span>
-                                        <br />
-                                        <small class="text-muted">ID: @item.ProductId</small>
-                                    </td>
+            <div class="card-header bg-white pt-3 pb-0 border-bottom d-flex justify-content-between align-items-end">
 
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(item.Sku))
-                                        {
-                                            <span class="badge bg-light text-dark border font-monospace">@item.Sku</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted small">-</span>
-                                        }
-                                    </td>
+                <ul class="nav nav-tabs card-header-tabs border-bottom-0">
+                    <li class="nav-item">
+                        <a class="nav-link @(currentChild == null ? "active fw-bold" : "text-secondary")"
+                           href="@Url.Action("Index", new { parentId = currentParent })">
+                            Tất cả
+                        </a>
+                    </li>
 
-                                    <td>
-                                        <span class="badge bg-info text-dark">@item.CategoryName</span>
-                                    </td>
+                    @if (childCats != null)
+                    {
+                        foreach (var sub in childCats)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @(currentChild == sub.CategoryId ? "active fw-bold" : "text-secondary")"
+                                   href="@Url.Action("Index", new { parentId = currentParent, categoryId = sub.CategoryId })">
+                                    @sub.CategoryName
+                                </a>
+                            </li>
+                        }
+                    }
 
-                                    <td class="text-end fw-bold text-success">
-                                        @item.Price.ToString("N0") ₫
-                                    </td>
+                    <li class="nav-item ms-1">
+                        <a class="nav-link border-0 text-success bg-transparent"
+                           href="@Url.Action("Create", "Category", new { parentId = currentParent })"
+                           title="Thêm danh mục con cho nhóm này">
+                            <i class="bi bi-plus-square-dotted fs-5"></i>
+                        </a>
+                    </li>
+                </ul>
 
-                                    <td class="text-center">
-                                        @if (item.Status == 1)
-                                        {
-                                            <span class="badge bg-success bg-opacity-75">
-                                                <i class="bi bi-check-circle"></i> Hiển thị
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary bg-opacity-75">
-                                                <i class="bi bi-eye-slash"></i> Đã ẩn
-                                            </span>
-                                        }
-                                    </td>
-
-                                    <td class="text-center">
-                                        <div class="btn-group" role="group">
-                                            <a asp-action="Edit" asp-route-id="@item.ProductId"
-                                               class="btn btn-outline-primary btn-sm" title="Sửa">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </a>
-
-                                            <form asp-action="Delete" asp-route-id="@item.ProductId" method="post"
-                                                  onsubmit="return confirm('Bạn có chắc muốn xóa: @item.ProductName?');"
-                                                  style="display:inline;">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm ms-1" title="Xóa">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                <div class="mb-2">
+                    <a asp-action="Create"
+                       asp-route-parentId="@currentParent"
+                       class="btn btn-success btn-sm shadow-sm">
+                        <i class="bi bi-plus-lg"></i> Thêm sản phẩm
+                    </a>
                 </div>
+            </div>
+
+            <div class="card-body p-0">
+                @if (Model != null && Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center">Ảnh</th>
+                                    <th>Tên sản phẩm</th>
+                                    <th>SKU</th>
+                                    <th>Danh mục</th>
+                                    <th class="text-end">Giá bán</th>
+                                    <th class="text-center">Trạng thái</th>
+                                    <th class="text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td class="text-center">
+                                            <img src="@(string.IsNullOrEmpty(item.Image) ? "https://placehold.co/50" : item.Image)"
+                                                 class="rounded border" style="width: 40px; height: 40px; object-fit: cover;">
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-dark">@item.ProductName</span>
+                                        </td>
+                                        <td><small class="font-monospace text-muted">@item.Sku</small></td>
+                                        <td><span class="badge bg-info text-dark bg-opacity-25">@item.CategoryName</span></td>
+                                        <td class="text-end fw-bold text-success">@item.Price.ToString("N0") ₫</td>
+                                        <td class="text-center">
+                                            @if (item.Status == 1)
+                                            {
+                                                <span class="badge bg-success">Hiển thị</span>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="badge bg-secondary">Ẩn</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-action="Edit" asp-route-id="@item.ProductId" asp-route-parentId="@ViewBag.CurrentParentId" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                            <form asp-action="Delete" asp-route-id="@item.ProductId" method="post" class="d-inline" onsubmit="return confirm('Xóa?')">
+                                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox display-4 text-muted opacity-25"></i>
+                        <p class="mt-2 text-muted">Chưa có sản phẩm nào trong danh mục này.</p>
+                        <a asp-action="Create" asp-route-categoryId="@currentChild" class="btn btn-primary btn-sm mt-2">
+                            <i class="bi bi-plus-lg"></i> Thêm sản phẩm ngay
+                        </a>
+                    </div>
+                }
             </div>
         </div>
     }
-    else
-    {
-        <div class="text-center py-5 text-muted">
-            <i class="bi bi-inbox display-4"></i>
-            <p class="mt-2">Chưa có sản phẩm nào.</p>
-        </div>
-    }
 </div>
+
+<style>
+    /* Hover effect for root category Cards */
+    .category-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+    }
+
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+            border-color: var(--bs-primary) !important;
+        }
+</style>

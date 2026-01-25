@@ -7,12 +7,12 @@
         <!-- Cart button only visible after login -->
         <li class="nav-item position-relative">
             <a class="nav-link position-relative" asp-controller="Cart" asp-action="Index" title="Giỏ hàng">
-                <i class="bi bi-cart3"></i> Giỏ hàng
+                 Giỏ hàng
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger ms-1"
                       style="font-size:0.65em; display:none;" id="cartBadge">0</span>
             </a>
         </li>
-
+            
         <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                 <i class="bi bi-person-circle"></i> @User.Identity.Name
@@ -23,13 +23,13 @@
                 {
                     <li>
                         <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
-                            <i class="bi bi-person-vcard"></i> Thông tin cá nhân
+                            Thông tin cá nhân
                         </a>
                     </li>
 
                     <li>
                         <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">
-                            <i class="bi bi-key"></i> Đổi mật khẩu
+                            Đổi mật khẩu
                         </a>
                     </li>
                 }
@@ -37,7 +37,7 @@
                 <li>
                     <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">
                         <button type="submit" class="dropdown-item">
-                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                            Đăng xuất
                         </button>
                     </form>
                 </li>

@@ -504,7 +504,12 @@ public async Task<IActionResult> Login(LoginViewModel model)
 
             try
             {
-                // 1. Gọi AI phân tích ảnh
+                // --- 1. LẤY USER ID NGAY TỪ ĐẦU (Dùng chung cho cả hàm) ---
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("Id");
+                int currentUserId = int.Parse(userIdClaim);
+                // -----------------------------------------------------------
+
+                // 2. Gọi AI phân tích ảnh
                 var aiResult = await _geminiHelper.AnalyzeIdCardAsync(model.FrontImage);
 
                 if (aiResult == null)
@@ -519,79 +524,66 @@ public async Task<IActionResult> Login(LoginViewModel model)
                     return View(model);
                 }
 
-                // ========================================================
-                // 2. LOGIC MATCHING (SO SÁNH THÔNG TIN) - PHẦN BẠN CẦN
-                // ========================================================
-
-                // 2.1. So khớp Số CCCD (Phải giống tuyệt đối)
+                // 3. LOGIC MATCHING
                 if (model.CccdNumber.Trim() != aiResult.Data.IdNumber.Trim())
                 {
-                    ModelState.AddModelError("CccdNumber", $"Số CCCD bạn nhập ({model.CccdNumber}) không khớp với ảnh ({aiResult.Data.IdNumber}).");
+                    ModelState.AddModelError("CccdNumber", $"Số CCCD không khớp với ảnh.");
                     return View(model);
                 }
 
-                // 2.2. So khớp Họ tên (Dùng Helper để so sánh tương đối: bỏ dấu, chữ thường)
                 string inputName = StringHelper.NormalizeString(model.FullName);
                 string aiName = StringHelper.NormalizeString(aiResult.Data.FullName);
-
-                // Chấp nhận sai khác nhỏ hoặc bắt buộc chính xác 100% tùy bạn.
-                // Ở đây tôi dùng Contains hoặc so sánh bằng
                 if (inputName != aiName)
                 {
-                    ModelState.AddModelError("FullName", $"Họ tên nhập vào không khớp với trên thẻ.\nNhập: {model.FullName}\nThẻ: {aiResult.Data.FullName}");
+                    ModelState.AddModelError("FullName", "Họ tên không khớp với trên thẻ.");
                     return View(model);
                 }
 
-                // 2.3. So khớp Ngày sinh
                 if (!StringHelper.CompareDates(model.DateOfBirth, aiResult.Data.Dob))
                 {
-                    ModelState.AddModelError("DateOfBirth", $"Ngày sinh không khớp. Trên thẻ là: {aiResult.Data.Dob}");
+                    ModelState.AddModelError("DateOfBirth", "Ngày sinh không khớp.");
                     return View(model);
                 }
 
-                // ========================================================
-                // 3. NẾU KHỚP HẾT -> TIẾN HÀNH NÂNG CẤP USER
-                // ========================================================
+                // ==========================================================
+                // 4. CHECK TRÙNG CCCD (Logic của bạn nằm ở đây là CHUẨN)
+                // ==========================================================
+                var existingUser = _userService.GetUserByCccd(aiResult.Data.IdNumber);
 
-                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("Id");
-                int userId = int.Parse(userIdClaim);
-                var user = _userService.GetUserById(userId);
+                // Nếu tìm thấy người dùng khác đã xác thực bằng số CCCD này
+                if (existingUser != null && existingUser.UserId != currentUserId)
+                {
+                    ModelState.AddModelError("CccdNumber", "Số CCCD này đã được sử dụng bởi một tài khoản khác!");
+                    return View(model);
+                }
+                // ==========================================================
 
-                // Lưu ảnh
-                string uniqueFileName = $"KYC_{userId}_{Guid.NewGuid()}_{Path.GetExtension(model.FrontImage.FileName)}";
 
-                // 1. Xác định đường dẫn thư mục chứa ảnh
+                // 5. LƯU VÀ CẬP NHẬT
+                var user = _userService.GetUserById(currentUserId);
+
+                string uniqueFileName = $"KYC_{currentUserId}_{Guid.NewGuid()}_{Path.GetExtension(model.FrontImage.FileName)}";
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "kyc");
 
-                // === 🔥 QUAN TRỌNG: THÊM ĐOẠN NÀY ĐỂ SỬA LỖI 🔥 ===
-                // Kiểm tra nếu thư mục chưa tồn tại thì tạo mới
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
-                // ===================================================
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await model.FrontImage.CopyToAsync(stream);
                 }
 
-                // Cập nhật thông tin (Ưu tiên lấy thông tin từ AI để chuẩn hóa dữ liệu lưu vào DB)
                 user.CccdNumber = aiResult.Data.IdNumber;
-                user.FullName = aiResult.Data.FullName; // Lấy tên in hoa từ thẻ cho đẹp
+                user.FullName = aiResult.Data.FullName;
                 user.DateOfBirth = model.DateOfBirth;
-                user.Address = aiResult.Data.Address; // Địa chỉ lấy từ thẻ luôn cho chính xác
+                user.Address = aiResult.Data.Address;
                 user.CccdFrontImage = "/images/kyc/" + uniqueFileName;
-
-                // Nâng cấp trạng thái
                 user.IsIdentityVerified = true;
                 user.IdentityRejectReason = null;
 
                 _userService.UpdateUser(user);
 
-                TempData["SuccessMessage"] = "Xác thực thành công! Thông tin đã được đối chiếu và cập nhật.";
+                TempData["SuccessMessage"] = "Xác thực thành công!";
                 return RedirectToAction("Profile");
             }
             catch (Exception ex)
@@ -599,6 +591,6 @@ public async Task<IActionResult> Login(LoginViewModel model)
                 ModelState.AddModelError("", "Lỗi hệ thống: " + ex.Message);
                 return View(model);
             }
-        }   
+        }
     }
 }
