@@ -200,29 +200,6 @@ INSERT INTO Cart (UserId, IsActive) VALUES (2, 1);
 DECLARE @CartId INT = SCOPE_IDENTITY();
 GO
 
--- 10. ORDERS
-INSERT INTO Orders (UserId, Status, TotalAmount, IsActive) VALUES 
-(2, 'Shipped', 35490000, 1),
-(3, 'Pending', 31990000, 1);
-GO
-
--- 11. ORDER ITEMS
-INSERT INTO OrderItems (OrderId, ProductId, Quantity, UnitPrice, Image) VALUES 
-(1, 1, 1, 34990000, '/images/iphone15.jpg'),
-(1, 4, 2, 250000, '/images/polo-shirt.jpg'),
-(2, 2, 1, 31990000, '/images/samsung24.jpg');
-GO
-
--- 12. PAYMENTS
-INSERT INTO Payments (OrderId, PaymentMethod, Amount, Status) VALUES 
-(1, 'CreditCard', 35490000, 'Paid'),
-(2, 'COD', 31990000, 'Pending');
-GO
-
--- 13. SHIPPING
-INSERT INTO Shipping (OrderId, Address, City, Country, PostalCode, Carrier, TrackingNumber) VALUES 
-(1, N'123 Lê Lợi', N'TP. HCM', N'Vietnam', '700000', 'GHTK', 'GHTK123456');
-GO
 
 -- 14. REVIEWS
 INSERT INTO Reviews (UserId, ProductId, Rating, Comment, IsActive) VALUES 

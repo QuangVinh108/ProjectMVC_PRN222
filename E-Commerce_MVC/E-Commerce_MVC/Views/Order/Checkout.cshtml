@@ -31,18 +31,31 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="City" class="form-label">Thành phố</label>
-                                <input asp-for="City" class="form-control" placeholder="Hà Nội, TP.HCM..." />
-                                <span asp-validation-for="City" class="text-danger"></span>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                                <select id="province" class="form-select" required>
+                                    <option value="">-- Chọn Tỉnh/TP --</option>
+                                </select>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Country" class="form-label">Quốc gia</label>
-                                <input asp-for="Country" class="form-control" value="Vietnam" />
-                                <span asp-validation-for="Country" class="text-danger"></span>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
+                                <select id="district" class="form-select" required disabled>
+                                    <option value="">-- Chọn Quận/Huyện --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Phường/Xã <span class="text-danger">*</span></label>
+                                <select id="ward" class="form-select" required disabled>
+                                    <option value="">-- Chọn Phường/Xã --</option>
+                                </select>
                             </div>
                         </div>
+
+                        <!-- Hidden field to store full address -->
+                        <input asp-for="City" type="hidden" id="cityHidden" />
+                        <input asp-for="Country" type="hidden" value="Vietnam" />
 
                         <div class="mb-3">
                             <label asp-for="PostalCode" class="form-label">Mã bưu điện</label>
@@ -102,4 +115,126 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // API URLs
+        const API_BASE = 'https://esgoo.net/api-tinhthanh';
+        
+        // DOM Elements
+        const provinceSelect = document.getElementById('province');
+        const districtSelect = document.getElementById('district');
+        const wardSelect = document.getElementById('ward');
+        const cityHidden = document.getElementById('cityHidden');
+        
+        // Load Provinces on page load
+        document.addEventListener('DOMContentLoaded', loadProvinces);
+        
+        // Event listeners
+        provinceSelect.addEventListener('change', onProvinceChange);
+        districtSelect.addEventListener('change', onDistrictChange);
+        wardSelect.addEventListener('change', updateCityField);
+        
+        // Load all provinces
+        async function loadProvinces() {
+            try {
+                const response = await fetch(`${API_BASE}/1/0.htm`);
+                const data = await response.json();
+                
+                if (data.error === 0) {
+                    provinceSelect.innerHTML = '<option value="">-- Chọn Tỉnh/TP --</option>';
+                    data.data.forEach(province => {
+                        const option = document.createElement('option');
+                        option.value = province.id;
+                        option.textContent = province.full_name;
+                        option.dataset.name = province.name;
+                        provinceSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading provinces:', error);
+                alert('Không thể tải danh sách tỉnh/thành phố');
+            }
+        }
+        
+        // When province changes, load districts
+        async function onProvinceChange() {
+            const provinceId = provinceSelect.value;
+            
+            // Reset district and ward
+            districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+            wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
+            districtSelect.disabled = true;
+            wardSelect.disabled = true;
+            
+            if (!provinceId) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/2/${provinceId}.htm`);
+                const data = await response.json();
+                
+                if (data.error === 0) {
+                    data.data.forEach(district => {
+                        const option = document.createElement('option');
+                        option.value = district.id;
+                        option.textContent = district.full_name;
+                        option.dataset.name = district.name;
+                        districtSelect.appendChild(option);
+                    });
+                    districtSelect.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error loading districts:', error);
+                alert('Không thể tải danh sách quận/huyện');
+            }
+            
+            updateCityField();
+        }
+        
+        // When district changes, load wards
+        async function onDistrictChange() {
+            const districtId = districtSelect.value;
+            
+            // Reset ward
+            wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
+            wardSelect.disabled = true;
+            
+            if (!districtId) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/3/${districtId}.htm`);
+                const data = await response.json();
+                
+                if (data.error === 0) {
+                    data.data.forEach(ward => {
+                        const option = document.createElement('option');
+                        option.value = ward.id;
+                        option.textContent = ward.full_name;
+                        option.dataset.name = ward.name;
+                        wardSelect.appendChild(option);
+                    });
+                    wardSelect.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error loading wards:', error);
+                alert('Không thể tải danh sách phường/xã');
+            }
+            
+            updateCityField();
+        }
+        
+        // Update hidden City field with full address
+        function updateCityField() {
+            const provinceName = provinceSelect.options[provinceSelect.selectedIndex]?.dataset.name || '';
+            const districtName = districtSelect.options[districtSelect.selectedIndex]?.dataset.name || '';
+            const wardName = wardSelect.options[wardSelect.selectedIndex]?.dataset.name || '';
+            
+            // Build full address: "Phường X, Quận Y, TP Z"
+            let parts = [];
+            if (wardName) parts.push(wardName);
+            if (districtName) parts.push(districtName);
+            if (provinceName) parts.push(provinceName);
+            
+            cityHidden.value = parts.join(', ');
+        }
+    </script>
 }
