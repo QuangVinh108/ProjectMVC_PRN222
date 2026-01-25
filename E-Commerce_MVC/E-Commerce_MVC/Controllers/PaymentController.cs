@@ -10,13 +10,16 @@ namespace E_Commerce_MVC.Controllers
     {
         private readonly IPaymentService _paymentService;
         private readonly ShopDbContext _context; // ✅ THÊM DÒNG NÀY
+        private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
             IPaymentService paymentService,
-            ShopDbContext context) // ✅ INJECT
+            ShopDbContext context,
+            ILogger<PaymentController> logger) // ✅ INJECT
         {
             _paymentService = paymentService;
             _context = context;
+            _logger = logger;
         }
 
         // ================== PAY ==================
@@ -59,45 +62,68 @@ namespace E_Commerce_MVC.Controllers
         }
 
         // ================== VNPAY RETURN ==================
+        //public IActionResult VnPayReturn()
+        //{
+        //    if (_paymentService.HandleVnPayReturn(Request.Query, out int orderId))
+        //    {
+        //        var order = _context.Orders
+        //            .Include(o => o.Payment)
+        //            .FirstOrDefault(o => o.OrderId == orderId);
+
+        //        if (order != null && order.Payment != null)
+        //        {
+        //            // ✅ CẬP NHẬT TRẠNG THÁI
+        //            order.Status = "Completed";
+        //            order.Payment.Status = "Paid";
+        //            order.Payment.PaidAt = DateTime.Now;
+
+        //            _context.SaveChanges();
+        //        }
+
+        //        TempData["Success"] = "Thanh toán VNPAY thành công!";
+        //    }
+        //    else
+        //    {
+        //        var txnRef = Request.Query["vnp_TxnRef"].ToString();
+        //        orderId = int.Parse(txnRef.Split('_')[0]);
+
+        //        var order = _context.Orders
+        //            .Include(o => o.Payment)
+        //            .FirstOrDefault(o => o.OrderId == orderId);
+
+        //        if (order?.Payment != null)
+        //        {
+        //            order.Payment.Status = "Failed";
+        //            _context.SaveChanges();
+        //        }
+
+        //        TempData["Error"] = "Thanh toán VNPAY thất bại!";
+        //    }
+
+        //    return RedirectToAction("Details", "Order", new { id = orderId });
+        //}
+
         public IActionResult VnPayReturn()
         {
-            if (_paymentService.HandleVnPayReturn(Request.Query, out int orderId))
+            try
             {
-                var order = _context.Orders
-                    .Include(o => o.Payment)
-                    .FirstOrDefault(o => o.OrderId == orderId);
+                // 🔥 SERVICE ĐÃ XỬ LÝ HẾT (Inventory + Payment)
+                var success = _paymentService.HandleVnPayReturn(Request.Query, out int orderId);
 
-                if (order != null && order.Payment != null)
-                {
-                    // ✅ CẬP NHẬT TRẠNG THÁI
-                    order.Status = "Completed";
-                    order.Payment.Status = "Paid";
-                    order.Payment.PaidAt = DateTime.Now;
+                TempData[success ? "Success" : "Error"] =
+                    success
+                        ? "Thanh toán VNPAY thành công! Đơn hàng đã xác nhận."
+                        : "Thanh toán VNPAY thất bại! Vui lòng thử lại.";
 
-                    _context.SaveChanges();
-                }
-
-                TempData["Success"] = "Thanh toán VNPAY thành công!";
+                return RedirectToAction("Details", "Order", new { id = orderId });
             }
-            else
+            catch (Exception ex)
             {
-                var txnRef = Request.Query["vnp_TxnRef"].ToString();
-                orderId = int.Parse(txnRef.Split('_')[0]);
-
-                var order = _context.Orders
-                    .Include(o => o.Payment)
-                    .FirstOrDefault(o => o.OrderId == orderId);
-
-                if (order?.Payment != null)
-                {
-                    order.Payment.Status = "Failed";
-                    _context.SaveChanges();
-                }
-
-                TempData["Error"] = "Thanh toán VNPAY thất bại!";
+                _logger.LogError(ex, "VnPayReturn Controller error");
+                TempData["Error"] = "Lỗi hệ thống. Liên hệ admin.";
+                return RedirectToAction("Index", "Order");
             }
-
-            return RedirectToAction("Details", "Order", new { id = orderId });
         }
+
     }
 }

@@ -1,43 +1,138 @@
-﻿@model IEnumerable<DAL.Entities.Wishlist>
+﻿@model IEnumerable<BLL.DTOs.WishlistProductDTO>
 @{
-    ViewData["Title"] = "Danh sách Wishlist";
+    ViewData["Title"] = "Wishlist của bạn";
 }
 
-<h2>@ViewData["Title"]</h2>
-<p>
-    <a asp-action="Create" class="btn btn-primary">Thêm mới</a>
-</p>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Wishlist ID</th>
-            <th>User ID</th>
-            <th>Sản phẩm ID</th>
-            <th>Ngày tạo</th>
-            <th>Thao tác</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Model != null && Model.Any())
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-heart-fill text-danger me-2"></i>
+            Wishlist
+        </h2>
+        @if (Model?.Any() == true)
         {
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@item.WishlistId</td>
-                    <td>@item.UserId</td>
-                    @* <td>@item.ProductId</td> *@
-                    <td>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.WishlistId" class="btn btn-sm btn-warning">Sửa</a>
-                        <a asp-action="Details" asp-route-id="@item.WishlistId" class="btn btn-sm btn-info">Chi tiết</a>
-                        <a asp-action="Delete" asp-route-id="@item.WishlistId" class="btn btn-sm btn-danger">Xóa</a>
-                    </td>
-                </tr>
-            }
+            <form asp-action="Clear" method="post" class="d-inline" onsubmit="return confirm('Xóa toàn bộ wishlist?')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash3"></i> Xóa tất cả
+                </button>
+            </form>
         }
-        else
-        {
-            <tr><td colspan="5" class="text-center">Chưa có wishlist nào</td></tr>
-        }
-    </tbody>
-</table>
+    </div>
+
+    @if (!Model?.Any() ?? true)
+    {
+        <div class="text-center py-5 border rounded bg-light">
+            <i class="bi bi-heart display-4 text-muted opacity-50 mb-3"></i>
+            <h5 class="text-muted">Wishlist trống</h5>
+            <p class="text-muted">Chưa có sản phẩm nào trong wishlist của bạn.</p>
+            <a asp-controller="Shop" asp-action="Index" class="btn btn-primary">
+                <i class="bi bi-shop"></i> Xem sản phẩm
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <strong>Tổng: @Model.Count() sản phẩm</strong>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 60px;"></th>
+                                <th>Sản phẩm</th>
+                                <th style="width: 80px;">Giá</th>
+                                <th style="width: 120px;">Ngày thêm</th>
+                                <th style="max-width: 200px;">Ghi chú</th>
+                                <th style="width: 120px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="text-center">
+                                        @if (!string.IsNullOrEmpty(item.ProductImage))
+                                        {
+                                            <img src="@Url.Content(item.ProductImage)"
+                                                 width="50" height="50"
+                                                 class="rounded shadow-sm object-fit-cover"
+                                                 alt="@item.ProductName"
+                                                 title="@item.ProductName" />
+                                        }
+                                        else
+                                        {
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                                                 style="width:50px;height:50px;">
+                                                <i class="bi bi-image text-muted"></i>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong>@item.ProductName</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            ID: @item.ProductId |
+                                            SKU: @(item.Sku ?? "-") |
+                                            SL: @item.Quantity
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success fs-5">
+                                            @item.Price.ToString("N0") ₫
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark small">
+                                            @item.AddedAt.ToString("dd/MM/yy HH:mm")
+                                        </span>
+                                    </td>
+                                    <td class="small">
+                                        @if (!string.IsNullOrEmpty(item.Note))
+                                        {
+                                            <span class="text-truncate d-block" style="max-width: 180px;" title="@item.Note">
+                                                <i class="bi bi-chat-square-text me-1 text-primary"></i>
+                                                @item.Note
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-controller="Shop" asp-action="Details" asp-route-id="@item.ProductId"
+                                               class="btn btn-outline-primary" title="Xem chi tiết">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-controller="Cart" asp-action="Add" asp-route-id="@item.ProductId"
+                                               class="btn btn-outline-success" title="Thêm vào giỏ">
+                                                <i class="bi bi-cart-plus"></i>
+                                            </a>
+                                            <form asp-action="Remove" asp-route-wishlistProductId="@item.WishlistProductId"
+                                                  class="d-inline" method="post"
+                                                  onsubmit="return confirm('Xóa @item.ProductName khỏi wishlist?')">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger" title="Xóa">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

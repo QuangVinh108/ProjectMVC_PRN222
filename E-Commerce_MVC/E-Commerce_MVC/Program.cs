@@ -96,6 +96,7 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -114,6 +115,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
+
+builder.Services.AddHttpContextAccessor();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>

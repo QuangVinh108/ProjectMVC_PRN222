@@ -67,29 +67,40 @@
                 <div class="col">
                     <div class="card h-100 border-0 shadow-hover product-card">
                         <div class="position-relative overflow-hidden bg-light ratio ratio-1x1 rounded-top">
-                            <a asp-action="Details" asp-route-id="@item.ProductId">
-                                @if (!string.IsNullOrEmpty(item.Image))
-                                {
-                                    <img src="@item.Image" class="card-img-top object-fit-cover product-img" alt="@item.ProductName">
-                                }
-                                else
-                                {
-                                    <img src="https://placehold.co/400x400?text=No+Image" class="card-img-top object-fit-cover product-img" alt="@item.ProductName">
-                                }
-                            </a>
+                            <a asp-action="Details" asp-route-id="@item.ProductId"
+                               class="position-absolute top-0 start-0 w-100 h-100" style="z-index:1;"></a>
 
+                            @if (!string.IsNullOrEmpty(item.Image))
+                            {
+                                <img src="@item.Image" class="card-img-top object-fit-cover product-img w-100 h-100" alt="@item.ProductName">
+                            }
+                            else
+                            {
+                                <img src="https://placehold.co/400x400?text=No+Image" class="card-img-top object-fit-cover product-img w-100 h-100" alt="@item.ProductName">
+                            }
+
+                            <!-- ♥ Button NGOÀI a -->
+                            <button class="position-absolute top-12px end-12px p-2 btn-link text-white shadow-lg rounded-circle wishlist-toggle z-index-5"
+                                    data-product-id="@item.ProductId" title="Thêm Wishlist"
+                                    style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);border:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;transition:all .3s;z-index:5;">
+                                <i class="bi bi-heart fs-5 wishlist-icon" style="transition:all .3s;"></i>
+                            </button>
                         </div>
 
-                        <div class="card-body d-flex flex-column">
+
+                        <!-- Card Body PHẢI nằm TRONG card -->
+                        <div class="card-body d-flex flex-column p-3">
                             <div class="small text-muted mb-1 text-uppercase">@item.CategoryName</div>
 
-                            <h5 class="card-title text-truncate mb-1">
-                                <a asp-action="Details" asp-route-id="@item.ProductId" class="text-decoration-none text-dark stretched-link">
+                            <h5 class="card-title text-truncate mb-2">
+                                <a asp-action="Details"
+                                   asp-route-id="@item.ProductId"
+                                   class="text-decoration-none text-dark product-title-link">
                                     @item.ProductName
                                 </a>
                             </h5>
 
-                            <div class="mt-auto pt-2">
+                            <div class="mt-auto">
                                 <span class="fw-bold text-primary fs-5">@item.Price.ToString("N0") ₫</span>
                             </div>
                         </div>
@@ -112,26 +123,123 @@
         </div>
     }
 </div>
+@section Scripts {
+    <script>
+        $(function() {
+            console.log('jQuery ready, binding wishlist...');
+
+            // ⭐ 1. LOAD STATE BAN ĐẦU (icon đỏ nếu đã add)
+            $('.wishlist-toggle').each(async function() {
+                const btn = this;
+                const productId = btn.dataset.productId;
+                try {
+                    const res = await fetch(`/Wishlist/Check/${productId}`);
+                    const isInWishlist = await res.json();
+                    const icon = btn.querySelector('.wishlist-icon');
+
+                    if (isInWishlist) {
+                        icon.classList.remove('bi-heart', 'text-white');
+                        icon.classList.add('bi-heart-fill', 'text-danger');
+                        btn.title = 'Xóa khỏi Wishlist';
+                    }
+                } catch(e) {
+                    console.log(`Check wishlist ${productId} fail:`, e);
+                }
+            });
+
+                    // 2. TOGGLE với API mới
+            $(document.body).on('click', '.wishlist-toggle', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const btn = this;
+                const icon = btn.querySelector('.wishlist-icon');
+                const productId = btn.dataset.productId;
+
+                console.log(`🧡 Toggle ${productId}`);
+
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+
+                try {
+                    // ⭐ THAY Add → Toggle + POST
+                    const res = await fetch(`/Wishlist/Toggle/${productId}`, {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+                    });
+
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    console.log('✅ Toggle response:', data);
+
+                    if (data.success) {
+                        // Toggle dựa vào isAdded từ server
+                        if (data.isAdded) {
+                            // Vừa ADD → đỏ
+                            icon.classList.remove('bi-heart', 'text-white');
+                            icon.classList.add('bi-heart-fill', 'text-danger');
+                            btn.title = 'Xóa khỏi Wishlist';
+                        } else {
+                            // Vừa REMOVE → trắng
+                            icon.classList.remove('bi-heart-fill', 'text-danger');
+                            icon.classList.add('bi-heart', 'text-white');
+                            btn.title = 'Thêm Wishlist';
+                        }
+                    } else {
+                        alert(data.message || 'Lỗi toggle wishlist');
+                    }
+                } catch(err) {
+                    console.error('❌ Error:', err);
+                    alert('Lỗi kết nối!');
+                } finally {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            });
+        });
+    </script>
+}
+
+
 
 <style>
-    /* Hiệu ứng nâng thẻ Card */
+    .z-index-5 {
+        z-index: 5 !important;
+    }
+    .top-12px {
+        top: 12px !important;
+    }
+
+    .end-12px {
+        right: 12px !important;
+    }
+
     .shadow-hover {
         transition: all 0.3s ease;
-        border: 1px solid #eee;
+        border: 1px solid #eee !important;
     }
 
         .shadow-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-            border-color: transparent;
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12) !important;
+            border-color: transparent !important;
         }
 
-    /* Zoom ảnh nhẹ */
     .product-img {
         transition: transform 0.5s ease;
     }
 
     .shadow-hover:hover .product-img {
-        transform: scale(1.05);
+        transform: scale(1.08);
+    }
+
+    .wishlist-toggle:hover {
+        background: rgba(255,255,255,0.35) !important;
+        transform: scale(1.15);
+    }
+
+    .wishlist-toggle:active {
+        transform: scale(0.95);
     }
 </style>
+

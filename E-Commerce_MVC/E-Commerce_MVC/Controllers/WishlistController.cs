@@ -1,12 +1,12 @@
-﻿using BLL.IService;
+﻿using BLL.DTOs;
+using BLL.IService;
 using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace E_Commerce_MVC.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
     [Authorize]
     public class WishlistController : Controller
     {
@@ -17,207 +17,75 @@ namespace E_Commerce_MVC.Controllers
             _wishlistService = wishlistService;
         }
 
-        private int GetCurrentUserId()
-        {
-            var claimUserId = User.FindFirst("UserId")?.Value ??
-                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            if (int.TryParse(claimUserId, out int userId))
-                return userId;
-
-            return HttpContext.Session.GetInt32("UserId") ?? 0;
-        }
-
-        [HttpGet("count")]
-        public async Task<IActionResult> Count()
-        {
-            try
-            {
-                var userId = GetCurrentUserId();
-                if(userId == 0) return Json(0);
-
-                var count = await _wishlistService.GetWishlistByUserAsync(userId);
-                return Json(count);
-            }
-            catch
-            {
-                return Json(0);
-            }
-        }
-
-
-        //GET: /Whishlist/Index - Show wishlist items
-        [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var userId = GetCurrentUserId();
-            if(userId == 0)
-                return RedirectToAction("Login", "Account");
+            var result = await _wishlistService.GetUserWishlistAsync();
+            var model = result.IsSuccess ? result.Data : new List<WishlistProductDTO>();
 
-            var wishlist = await _wishlistService.GetWishlistByUserAsync(userId);
-            var wishlists = wishlist != null
-        ? new List<Wishlist> { wishlist }
-        : new List<Wishlist>();
-            return View(wishlists);
+            if (!result.IsSuccess)
+                TempData["Error"] = result.Message;
+
+            return View(model);
         }
 
-        //GET: /Wishlist/Details/5 - Show details of a specific wishlist item
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Count()
         {
-            if(id == null)
-            {
-                return NotFound();
-            }
-
-            var wishlist = await _wishlistService.GetWishlistByIdAsync(id.Value);
-            if(wishlist == null)
-            {
-                return NotFound();
-            }
-
-            var userId = GetCurrentUserId();
-            if (wishlist.UserId != userId)
-            {
-                return Forbid();
-            }
-
-            return View(wishlist);
+            var result = await _wishlistService.GetWishlistCountAsync();
+            return Json(result.IsSuccess ? result.Data : 0);
         }
 
-
-        //GET: /Wishlist/Create - Show form to create a new wishlist item
-        [HttpGet("create")]
-        public IActionResult Create()
+        [HttpGet("Wishlist/Add/{productId}")]
+        public async Task<IActionResult> Add(int productId, string? note = null)
         {
-            var userId = GetCurrentUserId();
-            if(userId == 0)
-                return RedirectToAction("Login", "Account");
+            var result = await _wishlistService.AddToWishlistAsync(productId, note);
 
-            ViewBag.UserId = userId;
-            return View(new Wishlist { UserId = userId });
+            string message = result.IsSuccess
+                ? (result.Message ?? "Success")
+                : (result.Message ?? string.Join("; ", result.Errors));  // ⭐ Lấy từ Errors nếu Message null
+
+            return Json(new
+            {
+                success = result.IsSuccess,
+                message = result.Message ?? string.Join(", ", result.Errors)
+            });
         }
 
-        //POST: /Wishlist/Create - Handle form submission to create a new wishlist item
-        [HttpPost("Create")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Wishlist wishlist)
+        [HttpPost]
+        public async Task<IActionResult> Remove(int wishlistProductId)
         {
-            if(!ModelState.IsValid) return View(wishlist);
+            var result = await _wishlistService.RemoveFromWishlistAsync(wishlistProductId);
+            if (!result.IsSuccess) return BadRequest();
 
-            wishlist.UserId = GetCurrentUserId();
-            await _wishlistService.CreateWishlistAsync(wishlist);
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Index");  // ✅ Tự reload Index + list
         }
 
-        //GET: /Wishlist/Edit/5 - Show form to edit an existing wishlist item
-        [HttpGet("edit/{id}")]
-        public async Task<IActionResult> Edit(int? id)
+        [HttpPost]
+        public async Task<IActionResult> Clear()
         {
-            if(id == null)
-            {
-                return NotFound();
-            }
-
-            var wishlist = await _wishlistService.GetWishlistByIdAsync(id.Value);
-            if (wishlist == null)
-            {
-                return NotFound();
-            }
-            var userId = GetCurrentUserId();
-            if (wishlist.UserId != userId)
-            {
-                return Forbid();
-            }
-            return View(wishlist);
+            await _wishlistService.ClearWishlistAsync();  // Không cần check
+            return RedirectToAction("Index");  // ✅ Tự reload Index
         }
 
-        //POST: /Wishlist/Edit/5 - Handle form submission to update an existing wishlist item
-        [HttpPost("Edit")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Wishlist wishlist)
+
+
+        [HttpGet("/Wishlist/Check/{productId}")]
+        public async Task<IActionResult> Check(int productId)
         {
-            if (id != wishlist.WishlistId)
-            {
-                return NotFound();
-            }
-
-            var userId = GetCurrentUserId();
-            if (wishlist.UserId != userId)
-            {
-                return Forbid();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    await _wishlistService.UpdateWishlistAsync(wishlist);
-                    return RedirectToAction(nameof(Index));
-                }
-                catch
-                {
-                    return View(wishlist);
-                }
-            }
-            return View(wishlist);
+            var result = await _wishlistService.IsProductInWishlistAsync(productId);
+            return Json(result);
         }
 
-        //GET: /Wishlist/Delete/5 - Show confirmation page to delete a wishlist item
-        [HttpGet("delete/{id}")]
-        public async Task<IActionResult> Delete(int? id)
+        [HttpPost("/Wishlist/Toggle/{productId}")]
+        public async Task<IActionResult> Toggle(int productId)
         {
-            if (id == null)
+            var result = await _wishlistService.ToggleWishlistAsync(productId);
+            return Json(new
             {
-                return NotFound();
-            }
-
-            var wishlist = await _wishlistService.GetWishlistByIdAsync(id.Value);
-            if(wishlist == null)
-            {
-                return NotFound();
-            }
-
-            var userId = GetCurrentUserId();
-            if (wishlist.UserId != userId)
-            {
-                return Forbid();
-            }
-
-            return View(wishlist);
+                success = result.IsSuccess,
+                isAdded = result.Data,  // true=ADD, false=REMOVE
+                message = result.Message
+            });
         }
-
-        //POST: /Wishlist/Delete/5 - Handle confirmation to delete a wishlist item
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var wishlist = await _wishlistService.GetWishlistByIdAsync(id);
-            if (wishlist == null)
-            {
-                return NotFound();
-            }
-
-            var userId = GetCurrentUserId();
-            if (wishlist.UserId != userId)
-            {
-                return Forbid();
-            }
-
-            await _wishlistService.DeleteWishlistAsync(id);
-            return RedirectToAction(nameof(Index));
-        }
-
-        //[HttpPost("add/{productId}")]  // ← 5. Thêm API này
-        //public async Task<IActionResult> AddProduct(int productId)
-        //{
-        //    var userId = GetCurrentUserId();
-        //    if (userId == 0) return Unauthorized();
-
-        //    await _wishlistService.AddProductAsync(userId, productId);
-        //    return Ok(new { message = "Added to wishlist" });
-        //}
-
 
     }
 }

@@ -240,55 +240,55 @@ namespace BLL.Service
             try
             {
                 //1. Lấy order và order items
-                var orderResult = await _orderRepo.GetByIdAsync(orderId);
-                if (!orderResult.IsSuccess || orderResult.Data == null)
+                var order = await _orderRepo.GetByIdAsync(orderId);
+                if (order == null)
                     return GenericResult<bool>.Failure("Order không tồn tại");
 
                 var orderItems = await _orderItemRepo.GetByOrderIdAsync(orderId);
-                if (!orderItems.IsSuccess || !orderItems.Data.Any())
+                if (orderItems == null || !orderItems.Any())
                     return GenericResult<bool>.Failure("Order không có sản phẩm");
 
                 //2. Xác định action dựa trên payment status
                 bool shouldDebut = paymentStatus == "Paid";
 
-                foreach(var orderItem in orderItems.Data)
+                foreach(var orderItem in orderItems)
                 {
-                    var inventoryResut = await _inventoryRepo.GetByProductIdAsync(orderItem.ProductId);
-                    if (!inventoryResut.IsSucess || inventoryResut.Data == null)
+                    var inventory = await _inventoryRepo.GetByProductIdAsync(orderItem.ProductId);
+                    if (inventory == null)
                     {
                         _logger.LogWarning("Không tìm thấy inventory cho product {ProductId} trong order {OrderId}", orderItem.ProductId, orderId);
                         continue;
                     }
 
-                    var currentQuantity = inventoryResut.Data.Quantity;
+                    var currentQuantity = inventory.Quantity;
                     var newQuantity = shouldDebut
                         ? currentQuantity - orderItem.Quantity
                         : currentQuantity + orderItem.Quantity;
 
                     if(shouldDebut && newQuantity < 0)
                     {
-                        _logger.LogWarning("Không đủ stock cho product {ProductId}: cân {Quantity}, còn {Current}", orderItem.ProductId, orderItem.Quantiy, currentQuantity);
+                        _logger.LogWarning("Không đủ stock cho product {ProductId}: cân {Quantity}, còn {Current}", orderItem.ProductId, orderItem.Quantity, currentQuantity);
                         return GenericResult<bool>.Failure($"Không đủ hàng cho sản phẩm {orderItem.ProductId}");
                     }
 
                     //4. Update inventory
-                    var updateResult = await _inventoryRepo.UpdateQuantityAsync(orderItem.ProdutId, newQuantity);
+                    var updateSuccess = await _inventoryRepo.UpdateQuantityAsync(orderItem.ProductId, newQuantity);
 
-                    if (!updateResult.IsSuccess)
+                    if (!updateSuccess)
                     {
-                        _logger.LogError("Lỗi update inventory cho product {ProductId} trong order {OrderId}", orderItem.ProductId, orderId);
+                        _logger.LogError("Lỗi update inventory product {ProductId}", orderItem.ProductId);
 
                         return GenericResult<bool>.Failure("Lỗi cập nhật kho");
                     }
                 }
 
-                _logger.LogInformation("Xử lí inventory thành công cho order {OrderId}, status: {PaymentStatus}", orderId, paymentStatus);
+                _logger.LogInformation("✅ Inventory sync OK - Order {OrderId}, Status: {Status}", orderId, paymentStatus);
                 return GenericResult<bool>.Success(true);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi xử lý inventory cho order {OrderId}, status: {PaymentStatus}", orderId, paymentStatus);
-                return GenericResult<bool>.Failure("Lỗi hệ thống khi xử lý kho");
+                _logger.LogError(ex, "Inventory error - Order {OrderId}", orderId);
+                return GenericResult<bool>.Failure("Lỗi hệ thống");
 
             }
         }
