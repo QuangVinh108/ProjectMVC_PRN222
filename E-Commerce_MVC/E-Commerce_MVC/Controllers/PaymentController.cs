@@ -70,7 +70,7 @@ namespace E_Commerce_MVC.Controllers
                 if (order != null && order.Payment != null)
                 {
                     // ✅ CẬP NHẬT TRẠNG THÁI
-                    order.Status = "Paid";
+                    order.Status = "Completed";
                     order.Payment.Status = "Paid";
                     order.Payment.PaidAt = DateTime.Now;
 
