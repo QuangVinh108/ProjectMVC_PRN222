@@ -85,6 +85,12 @@ namespace BLL.Service
             _userRepository.UpdateUser(user);
         }
 
+        public void UpdateUser(User user)
+        {
+            // Có thể thêm validate logic chung nếu cần
+            _userRepository.UpdateUser(user);
+        }
+
         public async Task CreateUserAsync(CreateUserViewModel model)
         {
             var newUser = new User
@@ -111,7 +117,8 @@ namespace BLL.Service
         public void UpdateProfile(int userId, UpdateProfileViewModel model)
         {
             var user = _userRepository.GetUserById(userId);
-            if (user == null) throw new Exception("Không tìm thấy người dùng.");
+            if (user == null) 
+                throw new Exception("Không tìm thấy người dùng.");
 
             // --- LOGIC MỚI: KIỂM TRA EMAIL ---
             // Chỉ kiểm tra nếu người dùng nhập email KHÁC với email hiện tại
@@ -125,13 +132,19 @@ namespace BLL.Service
                 user.Email = model.Email; // Nếu hợp lệ thì cập nhật
             }
 
+            if (!user.IsIdentityVerified)
+            {
+                user.FullName = model.FullName;
+            }
+
             // Cập nhật các thông tin khác
-            user.FullName = model.FullName;
+            //user.FullName = model.FullName;
             user.Phone = model.Phone;
             user.Address = model.Address;
 
             _userRepository.UpdateUser(user);
         }
+
         public async Task<(bool Success, string Message)> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
         {
             // 1. Lấy user từ DB

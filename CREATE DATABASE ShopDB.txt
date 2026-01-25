@@ -27,6 +27,11 @@ CREATE TABLE Users (
     EmailConfirmed BIT NOT NULL DEFAULT 0,
     EmailConfirmedAt DATETIME2 NULL,
     LoginProvider NVARCHAR(50) NULL DEFAULT 'Local',
+    CccdNumber       NVARCHAR(50) NULL,      
+    DateOfBirth      DATETIME2 NULL,         
+    CccdFrontImage   NVARCHAR(500) NULL,
+    IsIdentityVerified BIT NOT NULL DEFAULT 0, 
+    IdentityRejectReason NVARCHAR(255) NULL,
     CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleId) REFERENCES Roles(RoleId)
 );
 
