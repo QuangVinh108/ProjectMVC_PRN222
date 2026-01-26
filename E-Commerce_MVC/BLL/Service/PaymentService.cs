@@ -6,6 +6,7 @@ using DAL.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
@@ -53,28 +54,42 @@ namespace BLL.Service
         public string CreateVnPayUrl(PaymentDto payment, HttpContext context)
         {
             var vnpay = new SortedDictionary<string, string>
-            {
-                { "vnp_Version", "2.1.0" },
-                { "vnp_Command", "pay" },
-                { "vnp_TmnCode", _config["VnPay:TmnCode"] },
-                { "vnp_Amount", ((long)(payment.Amount * 100)).ToString() },
-                { "vnp_CurrCode", "VND" },
-                { "vnp_TxnRef", $"{payment.OrderId}_{DateTime.Now.Ticks}" },
-                { "vnp_OrderInfo", $"Thanh toan don hang {payment.OrderId}" },
-                { "vnp_OrderType", "other" },
-                { "vnp_Locale", "vn" },
-                { "vnp_ReturnUrl", _config["VnPay:ReturnUrl"] },
-                { "vnp_IpAddr", context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1" },
-                { "vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss") },
-                { "vnp_ExpireDate", DateTime.Now.AddMinutes(15).ToString("yyyyMMddHHmmss") },
-            };
+    {
+        { "vnp_Version", "2.1.0" },
+        { "vnp_Command", "pay" },
+        { "vnp_TmnCode", _config["VnPay:TmnCode"] },
+        { "vnp_Amount", ((long)(payment.Amount * 100)).ToString() },
+        { "vnp_CurrCode", "VND" },
+        { "vnp_TxnRef", payment.OrderId.ToString() },
+        { "vnp_OrderInfo", $"Thanh_toan_don_hang_{payment.OrderId}" },
+        { "vnp_OrderType", "other" },
+        { "vnp_Locale", "vn" },
+        { "vnp_ReturnUrl", _config["VnPay:ReturnUrl"] },
+        { "vnp_IpAddr", context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1" },
+        { "vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss") },
+        { "vnp_ExpireDate", DateTime.Now.AddMinutes(15).ToString("yyyyMMddHHmmss") }
+    };
 
-            var hashData = string.Join("&", vnpay.Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value)}"));
-            var secureHash = HmacSHA512(_config["VnPay:HashSecret"], hashData);
-            var queryString = string.Join("&", vnpay.Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value)}"));
+            // ✅ 1. HASH DATA (KHÔNG URL ENCODE)
+            var hashData = string.Join("&",
+    vnpay.Select(kv =>
+        $"{kv.Key}={WebUtility.UrlEncode(kv.Value)}")
+);
+
+            var secureHash = HmacSHA512(
+                _config["VnPay:HashSecret"],
+                hashData
+            );
+
+            // ✅ 2. QUERY STRING (CÓ URL ENCODE)
+            var queryString = string.Join("&",
+    vnpay.Select(kv =>
+        $"{kv.Key}={WebUtility.UrlEncode(kv.Value)}")
+);
 
             return $"{_config["VnPay:BaseUrl"]}?{queryString}&vnp_SecureHash={secureHash}";
         }
+
 
         public async Task<(bool Success, string Message, int OrderId)> ProcessVnPayReturnAsync(IQueryCollection query)
         {
@@ -96,11 +111,21 @@ namespace BLL.Service
 
                 // Validate Signature
                 var signData = string.Join("&", query
-                    .Where(x => x.Key.StartsWith("vnp_") && x.Key != "vnp_SecureHash" && x.Key != "vnp_SecureHashType")
-                    .OrderBy(x => x.Key)
-                    .Select(x => $"{x.Key}={x.Value}"));
+    .Where(x => x.Key.StartsWith("vnp_") &&
+                x.Key != "vnp_SecureHash" &&
+                x.Key != "vnp_SecureHashType")
+    .OrderBy(x => x.Key)
+    .Select(x =>
+        $"{x.Key}={WebUtility.UrlEncode(x.Value)}"));
+
 
                 var checkSignature = HmacSHA512(_config["VnPay:HashSecret"], signData);
+
+                _logger.LogInformation("RETURN SIGN DATA: {SignData}", signData);
+                _logger.LogInformation("RETURN HASH CALC: {Hash}", checkSignature);
+                _logger.LogInformation("RETURN HASH FROM VNPAY: {Hash}", vnp_SecureHash);
+
+
                 if (!checkSignature.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return (false, "Lỗi bảo mật: Chữ ký không hợp lệ", orderId);
