@@ -16,15 +16,18 @@ namespace BLL.Service
         private readonly IUserRepository _userRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IJwtService _jwtService;
+        private readonly IWishlistService _wishlistService;
 
         public AuthService(
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
-            IJwtService jwtService)
+            IJwtService jwtService,
+            IWishlistService wishlistService)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _jwtService = jwtService;
+            _wishlistService = wishlistService;
         }
 
         public async Task<(string? accessToken, string? refreshToken, string? role)> LoginAsync(string username, string password)
@@ -164,6 +167,12 @@ namespace BLL.Service
 
                 await _userRepository.AddUserAsync(user);
                 await _userRepository.SaveChangesAsync();
+
+                var wishlistResult = await _wishlistService.CreateEmptyWishlistForUserAsync(user.UserId, "Wishlist mặc định");
+                if (!wishlistResult.IsSuccess)
+                {
+                    Console.WriteLine($"⚠️ Warning: Không tạo được wishlist cho user {user.UserId}: {wishlistResult.Message}");
+                }
 
                 Console.WriteLine($"✅ User created with UserId: {user.UserId}");
 

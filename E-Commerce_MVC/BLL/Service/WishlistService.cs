@@ -277,5 +277,33 @@ namespace BLL.Service
                 return GenericResult<bool>.Success(true, "Đã thêm vào wishlist");
             }
         }
+
+        public async Task<GenericResult<bool>> CreateEmptyWishlistForUserAsync(int userId, string? note = null)
+        {
+            try
+            {
+                if (userId <= 0)
+                    return GenericResult<bool>.Failure("Invalid user ID");
+
+                var wishlist = await _wishlistRepository.GetWishlistByUserAsync(userId);
+                if (wishlist != null)
+                    return GenericResult<bool>.Success(false, "Wishlist already exists");
+
+                wishlist = new Wishlist
+                {
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _wishlistRepository.AddAsync(wishlist);
+
+                Console.WriteLine($"✅ Created empty wishlist for user {userId}");
+                return GenericResult<bool>.Success(true, "Wishlist created successfully");
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<bool>.Failure($"Error creating wishlist: {ex.Message}");
+            }
+        }
+
     }
 }

@@ -19,5 +19,6 @@ namespace BLL.IService
         Task<GenericResult<IEnumerable<WishlistProduct>>> GetAllWishlistProductsForAdminAsync();
         Task<bool> IsProductInWishlistAsync(int productId);
         Task<GenericResult<bool>> ToggleWishlistAsync(int productId);
+        Task<GenericResult<bool>> CreateEmptyWishlistForUserAsync(int userId, string? note = null);
     }
 }
