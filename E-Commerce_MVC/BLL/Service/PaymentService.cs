@@ -1,5 +1,6 @@
 ﻿using BLL.DTOs;
 using BLL.IService;
+using DAL.Entities;
 using DAL.IRepository;
 using DAL.Repository;
 using Microsoft.AspNetCore.Http;
@@ -14,23 +15,39 @@ namespace BLL.Service
     public class PaymentService : IPaymentService
     {
         private readonly IInventoryService _inventoryService;
-        private readonly IPaymentRepository _paymentRepository;
         private readonly IConfiguration _config;
         private readonly ILogger<PaymentService> _logger;
         private readonly IOrderRepository _orderRepository;
 
         public PaymentService(
             IInventoryService inventoryService,
-            IPaymentRepository paymentRepository,
             IConfiguration config,
             ILogger<PaymentService> logger,
             IOrderRepository orderRepository)
         {
             _inventoryService = inventoryService;
-            _paymentRepository = paymentRepository;
             _config = config;
             _logger = logger;
             _orderRepository = orderRepository;
+        }
+
+        public async Task CreatePendingPaymentAsync(int orderId, decimal amount)
+        {
+            var order = await _orderRepository.GetByIdAsync(orderId, includeDetails: true);
+            if (order == null) throw new Exception("Order not found");
+
+            if (order.Payment == null)
+            {
+                order.Payment = new Payment
+                {
+                    OrderId = orderId,
+                    PaymentMethod = "VNPAY", // Hardcode string
+                    Amount = amount,
+                    Status = "Pending",      // Hardcode string
+                    PaidAt = null
+                };
+                await _orderRepository.UpdateAsync(order);
+            }
         }
 
         public string CreateVnPayUrl(PaymentDto payment, HttpContext context)
@@ -42,124 +59,231 @@ namespace BLL.Service
                 { "vnp_TmnCode", _config["VnPay:TmnCode"] },
                 { "vnp_Amount", ((long)(payment.Amount * 100)).ToString() },
                 { "vnp_CurrCode", "VND" },
-                { "vnp_TxnRef", payment.OrderId.ToString() },
-
-                { "vnp_OrderInfo", $"Thanh_toan_don_hang_{payment.OrderId}" },
+                { "vnp_TxnRef", $"{payment.OrderId}_{DateTime.Now.Ticks}" },
+                { "vnp_OrderInfo", $"Thanh toan don hang {payment.OrderId}" },
                 { "vnp_OrderType", "other" },
                 { "vnp_Locale", "vn" },
                 { "vnp_ReturnUrl", _config["VnPay:ReturnUrl"] },
                 { "vnp_IpAddr", context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1" },
                 { "vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss") },
                 { "vnp_ExpireDate", DateTime.Now.AddMinutes(15).ToString("yyyyMMddHHmmss") },
-                { "vnp_SecureHashType", "HmacSHA512" }
             };
 
-            // 1️⃣ HashData – PHẢI URL ENCODE
-            var hashData = string.Join("&",
-                vnpay
-                    .Where(kv => kv.Key != "vnp_SecureHashType")
-                    .Select(kv =>
-                        $"{kv.Key}={Uri.EscapeDataString(kv.Value)}")
-            );
-
-            // 2️⃣ QueryString – giữ nguyên
-            var queryString = string.Join("&",
-                vnpay.Select(kv =>
-                    $"{kv.Key}={Uri.EscapeDataString(kv.Value)}")
-            );
-
+            var hashData = string.Join("&", vnpay.Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value)}"));
             var secureHash = HmacSHA512(_config["VnPay:HashSecret"], hashData);
-            var paymentUrl = $"{_config["VnPay:BaseUrl"]}?{queryString}&vnp_SecureHash={secureHash}";
+            var queryString = string.Join("&", vnpay.Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value)}"));
 
-            _logger.LogInformation("Create VNPay URL - OrderId: {OrderId}", payment.OrderId);
-
-            return paymentUrl;
-
+            return $"{_config["VnPay:BaseUrl"]}?{queryString}&vnp_SecureHash={secureHash}";
         }
 
-
-        public bool HandleVnPayReturn(IQueryCollection query, out int orderId)
+        public async Task<(bool Success, string Message, int OrderId)> ProcessVnPayReturnAsync(IQueryCollection query)
         {
-            orderId = 0;
+            int orderId = 0;
             try
             {
-                // 1. PARSE ORDER ID
-                var txnRef = query["vnp_TxnRef"].ToString();
-                orderId = int.Parse(txnRef);
+                if (query.Count == 0) return (false, "Invalid parameters", 0);
 
-                // 2. VALIDATE SIGNATURE
-                var receivedHash = query["vnp_SecureHash"].ToString();
-                var signData = string.Join("&",
-                    query.Where(x => x.Key.StartsWith("vnp_") &&
-                                   x.Key != "vnp_SecureHash" &&
-                                   x.Key != "vnp_SecureHashType")
-                        .OrderBy(x => x.Key)
-                        .Select(x => $"{x.Key}={x.Value}"));
+                var vnp_SecureHash = query["vnp_SecureHash"].ToString();
+                var vnp_TxnRef = query["vnp_TxnRef"].ToString();
+                var vnp_ResponseCode = query["vnp_ResponseCode"].ToString();
+                // var vnp_TransactionNo = query["vnp_TransactionNo"].ToString(); // Có thể log lại nếu cần
 
-                var calculatedHash = HmacSHA512(_config["VnPay:HashSecret"], signData);
-                var isValidSignature = receivedHash.Equals(calculatedHash, StringComparison.OrdinalIgnoreCase);
+                // Parse OrderId
+                if (vnp_TxnRef.Contains("_"))
+                    orderId = int.Parse(vnp_TxnRef.Split('_')[0]);
+                else
+                    orderId = int.Parse(vnp_TxnRef);
 
-                // 3. GET VNPAY STATUS
-                var vnpResponseCode = query["vnp_ResponseCode"].ToString();
-                var vnpTransactionStatus = query["vnp_TransactionStatus"].ToString();
-                var paymentDbStatus = GetPaymentStatus(vnpResponseCode, vnpTransactionStatus);
-                var isPaymentSuccess = vnpResponseCode == "00";
+                // Validate Signature
+                var signData = string.Join("&", query
+                    .Where(x => x.Key.StartsWith("vnp_") && x.Key != "vnp_SecureHash" && x.Key != "vnp_SecureHashType")
+                    .OrderBy(x => x.Key)
+                    .Select(x => $"{x.Key}={x.Value}"));
 
-                _logger.LogInformation("🔍 VNPay Callback - OrderId: {OrderId}, Sig: {Valid}, Status: {Status}",
-                    orderId, isValidSignature, paymentDbStatus);
-
-                // 4. 🔥 CRITICAL: PROCESS INVENTORY + UPDATE DB
-                if (isValidSignature)
+                var checkSignature = HmacSHA512(_config["VnPay:HashSecret"], signData);
+                if (!checkSignature.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    // INVENTORY: Trừ stock nếu Paid, cộng lại nếu Failed
-                    var inventoryStatus = paymentDbStatus == "Paid" ? "Paid" : "Failed";
-                    var inventoryResult = _inventoryService.ProcessPaymentInventoryAsync(orderId, inventoryStatus).Result;
-
-                    _logger.LogInformation("📦 Inventory Result - OrderId: {OrderId}, Success: {Success}",
-                        orderId, inventoryResult.IsSuccess);
-
-                    // UPDATE PAYMENT DB
-                    DateTime? paidAt = isPaymentSuccess ? DateTime.UtcNow : null;
-                    var paymentRows = _paymentRepository.UpdateStatusAsync(orderId, paymentDbStatus, paidAt).Result;
-
-                    var allSuccess = inventoryResult.IsSuccess && paymentRows > 0;
-
-                    _logger.LogInformation("🎯 SYNC COMPLETE - OrderId: {OrderId}, Inv: {InvOk}, Pay: {PayRows} ({AllOk})",
-                    orderId, inventoryResult.IsSuccess, paymentRows, allSuccess);
+                    return (false, "Lỗi bảo mật: Chữ ký không hợp lệ", orderId);
                 }
 
-                return isValidSignature && isPaymentSuccess;
+                // Lấy Order
+                var order = await _orderRepository.GetByIdAsync(orderId, includeDetails: true);
+                if (order == null) return (false, "Đơn hàng không tồn tại", orderId);
+
+                if (vnp_ResponseCode == "00") // Thành công
+                {
+                    // Trừ kho
+                    await _inventoryService.ProcessPaymentInventoryAsync(orderId, "Paid");
+
+                    // Cập nhật trạng thái Order & Payment
+                    order.Status = "Completed"; // Hardcode string
+                    if (order.Payment != null)
+                    {
+                        order.Payment.Status = "Paid"; // Hardcode string
+                        order.Payment.PaidAt = DateTime.Now;
+                        // Lưu ý: Không lưu TransactionId vào DB vì Entity không có trường này (theo yêu cầu)
+                    }
+
+                    await _orderRepository.UpdateAsync(order);
+                    return (true, "Thanh toán thành công!", orderId);
+                }
+                else // Thất bại
+                {
+                    if (order.Payment != null)
+                    {
+                        order.Payment.Status = "Failed"; // Hardcode string
+                        await _orderRepository.UpdateAsync(order);
+                    }
+                    return (false, $"Thanh toán thất bại. Mã lỗi: {vnp_ResponseCode}", orderId);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "💥 VNPay Return Error");
-                return false;
+                _logger.LogError(ex, "VNPay Return Error");
+                return (false, "Lỗi xử lý hệ thống", orderId);
             }
         }
 
-        private static string GetPaymentStatus(string vnpResponseCode, string vnpTransactionStatus)
-        {
-            return (vnpResponseCode, vnpTransactionStatus) switch
-            {
-                ("00", "00") => "Paid",
-                ("00", _) => "Pending",
-                ("07", _) => "Failed",
-                ("09", _) => "Failed",
-                ("99", _) => "Failed",
-                ("24", _) => "Cancelled",
-                _ => "Failed"
-            };
-        }
-
-
-
-
         private static string HmacSHA512(string key, string input)
         {
-            using var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(key));
-            return BitConverter.ToString(hmac.ComputeHash(Encoding.UTF8.GetBytes(input)))
-                .Replace("-", "")
-                .ToUpper();
+            var hash = new StringBuilder();
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var inputBytes = Encoding.UTF8.GetBytes(input);
+            using (var hmac = new HMACSHA512(keyBytes))
+            {
+                var hashValue = hmac.ComputeHash(inputBytes);
+                foreach (var theByte in hashValue) hash.Append(theByte.ToString("x2"));
+            }
+            return hash.ToString();
         }
+
+        //public string CreateVnPayUrl(PaymentDto payment, HttpContext context)
+        //{
+        //    var vnpay = new SortedDictionary<string, string>
+        //    {
+        //        { "vnp_Version", "2.1.0" },
+        //        { "vnp_Command", "pay" },
+        //        { "vnp_TmnCode", _config["VnPay:TmnCode"] },
+        //        { "vnp_Amount", ((long)(payment.Amount * 100)).ToString() },
+        //        { "vnp_CurrCode", "VND" },
+        //        { "vnp_TxnRef", payment.OrderId.ToString() },
+
+        //        { "vnp_OrderInfo", $"Thanh_toan_don_hang_{payment.OrderId}" },
+        //        { "vnp_OrderType", "other" },
+        //        { "vnp_Locale", "vn" },
+        //        { "vnp_ReturnUrl", _config["VnPay:ReturnUrl"] },
+        //        { "vnp_IpAddr", context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1" },
+        //        { "vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss") },
+        //        { "vnp_ExpireDate", DateTime.Now.AddMinutes(15).ToString("yyyyMMddHHmmss") },
+        //        { "vnp_SecureHashType", "HmacSHA512" }
+        //    };
+
+        //    // 1️⃣ HashData – PHẢI URL ENCODE
+        //    var hashData = string.Join("&",
+        //        vnpay
+        //            .Where(kv => kv.Key != "vnp_SecureHashType")
+        //            .Select(kv =>
+        //                $"{kv.Key}={Uri.EscapeDataString(kv.Value)}")
+        //    );
+
+        //    // 2️⃣ QueryString – giữ nguyên
+        //    var queryString = string.Join("&",
+        //        vnpay.Select(kv =>
+        //            $"{kv.Key}={Uri.EscapeDataString(kv.Value)}")
+        //    );
+
+        //    var secureHash = HmacSHA512(_config["VnPay:HashSecret"], hashData);
+        //    var paymentUrl = $"{_config["VnPay:BaseUrl"]}?{queryString}&vnp_SecureHash={secureHash}";
+
+        //    _logger.LogInformation("Create VNPay URL - OrderId: {OrderId}", payment.OrderId);
+
+        //    return paymentUrl;
+
+        //}
+
+
+        //public bool HandleVnPayReturn(IQueryCollection query, out int orderId)
+        //{
+        //    orderId = 0;
+        //    try
+        //    {
+        //        // 1. PARSE ORDER ID
+        //        var txnRef = query["vnp_TxnRef"].ToString();
+        //        orderId = int.Parse(txnRef);
+
+        //        // 2. VALIDATE SIGNATURE
+        //        var receivedHash = query["vnp_SecureHash"].ToString();
+        //        var signData = string.Join("&",
+        //            query.Where(x => x.Key.StartsWith("vnp_") &&
+        //                           x.Key != "vnp_SecureHash" &&
+        //                           x.Key != "vnp_SecureHashType")
+        //                .OrderBy(x => x.Key)
+        //                .Select(x => $"{x.Key}={x.Value}"));
+
+        //        var calculatedHash = HmacSHA512(_config["VnPay:HashSecret"], signData);
+        //        var isValidSignature = receivedHash.Equals(calculatedHash, StringComparison.OrdinalIgnoreCase);
+
+        //        // 3. GET VNPAY STATUS
+        //        var vnpResponseCode = query["vnp_ResponseCode"].ToString();
+        //        var vnpTransactionStatus = query["vnp_TransactionStatus"].ToString();
+        //        var paymentDbStatus = GetPaymentStatus(vnpResponseCode, vnpTransactionStatus);
+        //        var isPaymentSuccess = vnpResponseCode == "00";
+
+        //        _logger.LogInformation("🔍 VNPay Callback - OrderId: {OrderId}, Sig: {Valid}, Status: {Status}",
+        //            orderId, isValidSignature, paymentDbStatus);
+
+        //        // 4. 🔥 CRITICAL: PROCESS INVENTORY + UPDATE DB
+        //        if (isValidSignature)
+        //        {
+        //            // INVENTORY: Trừ stock nếu Paid, cộng lại nếu Failed
+        //            var inventoryStatus = paymentDbStatus == "Paid" ? "Paid" : "Failed";
+        //            var inventoryResult = _inventoryService.ProcessPaymentInventoryAsync(orderId, inventoryStatus).Result;
+
+        //            _logger.LogInformation("📦 Inventory Result - OrderId: {OrderId}, Success: {Success}",
+        //                orderId, inventoryResult.IsSuccess);
+
+        //            // UPDATE PAYMENT DB
+        //            DateTime? paidAt = isPaymentSuccess ? DateTime.UtcNow : null;
+        //            var paymentRows = _paymentRepository.UpdateStatusAsync(orderId, paymentDbStatus, paidAt).Result;
+
+        //            var allSuccess = inventoryResult.IsSuccess && paymentRows > 0;
+
+        //            _logger.LogInformation("🎯 SYNC COMPLETE - OrderId: {OrderId}, Inv: {InvOk}, Pay: {PayRows} ({AllOk})",
+        //            orderId, inventoryResult.IsSuccess, paymentRows, allSuccess);
+        //        }
+
+        //        return isValidSignature && isPaymentSuccess;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "💥 VNPay Return Error");
+        //        return false;
+        //    }
+        //}
+
+        //private static string GetPaymentStatus(string vnpResponseCode, string vnpTransactionStatus)
+        //{
+        //    return (vnpResponseCode, vnpTransactionStatus) switch
+        //    {
+        //        ("00", "00") => "Paid",
+        //        ("00", _) => "Pending",
+        //        ("07", _) => "Failed",
+        //        ("09", _) => "Failed",
+        //        ("99", _) => "Failed",
+        //        ("24", _) => "Cancelled",
+        //        _ => "Failed"
+        //    };
+        //}
+
+
+
+
+        //private static string HmacSHA512(string key, string input)
+        //{
+        //    using var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(key));
+        //    return BitConverter.ToString(hmac.ComputeHash(Encoding.UTF8.GetBytes(input)))
+        //        .Replace("-", "")
+        //        .ToUpper();
+        //}
     }
 }

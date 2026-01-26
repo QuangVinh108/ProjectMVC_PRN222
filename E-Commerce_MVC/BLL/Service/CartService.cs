@@ -24,5 +24,8 @@ namespace BLL.Service
 
         public void RemoveItem(int cartItemId)
             => _cartRepository.RemoveItem(cartItemId);
+
+        public Task AddOrReplaceSingleItemAsync(int userId, int productId, int quantity)
+            => _cartRepository.AddOrReplaceSingleItemAsync(userId, productId, quantity);
     }
 }

@@ -11,14 +11,11 @@ namespace E_Commerce_MVC.Controllers
     public class OrderController : Controller
     {
         private readonly IOrderService _orderService;
-        private readonly ICartRepository _cartRepo;
 
-        public OrderController(
-            IOrderService orderService,
-            ICartRepository cartRepo)
+
+        public OrderController(IOrderService orderService)
         {
             _orderService = orderService;
-            _cartRepo = cartRepo;
         }
 
         // ================== INDEX ==================
@@ -32,14 +29,8 @@ namespace E_Commerce_MVC.Controllers
         // ================== DETAILS ==================
         public async Task<IActionResult> Details(int id)
         {
-            var order = await _orderService.GetOrderByIdAsync(id);
-            if (order == null)
-                return RedirectToAction(nameof(Index));
-
-            if (order.UserId != GetCurrentUserId())
-                return RedirectToAction(nameof(Index));
-
-            return View(order);
+            var order = await _orderService.GetOrderByIdAsync(id, GetCurrentUserId());
+            return order == null ? RedirectToAction(nameof(Index)) : View(order);
         }
 
         // ================== CHECKOUT ==================
@@ -74,18 +65,9 @@ namespace E_Commerce_MVC.Controllers
             try
             {
                 var userId = GetCurrentUserId();
+                var dto = new CreateOrderDto { UserId = userId, PaymentMethod = "COD", Country = "Vietnam" };
 
-                // ✅ CART TẠM CHỈ 1 SẢN PHẨM
-                await _cartRepo.AddOrReplaceSingleItemAsync(userId, productId, quantity);
-
-                // ✅ TẠO ORDER → LƯU DB
-                var order = await _orderService.CreateOrderAsync(new CreateOrderDto
-                {
-                    UserId = userId,
-                    PaymentMethod = "COD",
-                    Country = "Vietnam"
-                });
-
+                var order = await _orderService.CreateOrderBuyNowAsync(userId, productId, quantity, dto);
                 return RedirectToAction(nameof(Details), new { id = order.OrderId });
             }
             catch (Exception ex)

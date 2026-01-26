@@ -8,5 +8,6 @@ namespace BLL.DTOs
         public decimal Amount { get; set; }
         public DateTime? PaidAt { get; set; }
         public string Status { get; set; } = string.Empty; // Pending, Paid, Failed
+        public string? TransactionId { get; set; }
     }
 }
