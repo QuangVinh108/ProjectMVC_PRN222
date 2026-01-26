@@ -3,6 +3,12 @@
 @{
     ViewData["Title"] = Model.ProductName;
 }
+<div class="container pt-4">
+    <button id="smartBackBtn" onclick="smartBack()" class="btn btn-outline-secondary btn-back">
+        <i id="backButtonIcon" class="bi bi-arrow-left"></i>
+        <span id="backButtonText">Quay lại</span>
+    </button>
+</div>
 
 <div class="container py-5">
     <div class="row gx-5">
@@ -83,6 +89,57 @@
 
 @section Scripts {
     <script>
+        function smartBack() {
+            const referrer = document.referrer;
+            const currentHost = window.location.hostname;
+
+            console.log('Referrer:', referrer);
+
+            if (referrer && referrer.includes(currentHost)) {
+                if (referrer.toLowerCase().includes('/wishlist')) {
+                    window.location.href = '/Wishlist/Index';
+                    return;
+                }
+                if (referrer.toLowerCase().includes('/shop')) {
+                    window.location.href = '/Shop/Index';
+                    return;
+                }
+                window.history.back();
+            } else {
+                window.location.href = '/Home/Index';
+            }
+        }
+
+        // Update button text và icon dựa trên nguồn
+        function updateBackButton() {
+            const backBtn = document.getElementById('smartBackBtn');
+            const backText = document.getElementById('backButtonText');
+            const backIcon = document.getElementById('backButtonIcon');
+
+            if (!backBtn) return;
+
+            const referrer = document.referrer;
+
+            if (referrer) {
+                if (referrer.toLowerCase().includes('/wishlist')) {
+                    backText.textContent = 'Quay lại Wishlist';
+                    backIcon.className = 'bi bi-heart-fill';
+                    backBtn.classList.remove('btn-outline-secondary');
+                    backBtn.classList.add('btn-outline-danger');
+                } else if (referrer.toLowerCase().includes('/shop')) {
+                    backText.textContent = 'Quay lại Sản phẩm';
+                    backIcon.className = 'bi bi-shop';
+                    backBtn.classList.remove('btn-outline-secondary');
+                    backBtn.classList.add('btn-outline-primary');
+                }
+            }
+        }
+
+        // Chạy khi page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateBackButton();
+        });
+
         // Optional AJAX submit to keep user on product page and update the cart badge
         (function () {
             const form = document.querySelector('.add-to-cart-form');

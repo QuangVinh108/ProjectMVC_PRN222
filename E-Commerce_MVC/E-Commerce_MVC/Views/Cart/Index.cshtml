@@ -1,109 +1,204 @@
 ﻿@model DAL.Entities.Cart
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">🛒 Giỏ hàng</h1>
-    <a asp-controller="Order" asp-action="Index" class="btn btn-outline-primary">
-        <i class="bi bi-card-checklist me-1"></i> Đơn hàng
-    </a>
-</div>
+@{
+    ViewData["Title"] = "Giỏ hàng của bạn";
+}
 
-@if (Model == null)
-{
-    <p style="color:red;">Cart = null (chưa tạo cart cho user)</p>
-}
-else if (!Model.CartItems.Any())
-{
-    <p>Giỏ hàng trống</p>
-}
-else
-{
-    @* Single antiforgery token for JS *@
-    <div id="afToken" style="display:none;">
-        @Html.AntiForgeryToken()
+<div class="cart-page">
+    <!-- Header -->
+    <div class="cart-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="cart-title">
+                    <i class="bi bi-cart3"></i> Giỏ hàng của bạn
+                </h1>
+                @if (Model != null && Model.CartItems.Any())
+                {
+                    <p class="cart-subtitle">Bạn có @Model.CartItems.Count sản phẩm trong giỏ</p>
+                }
+            </div>
+            <a asp-controller="Order" asp-action="Index" class="btn btn-outline-primary">
+                <i class="bi bi-receipt me-2"></i> Đơn hàng của tôi
+            </a>
+        </div>
     </div>
 
-    <table class="table" style="table-layout: fixed; width: 100%;">
-        <colgroup>
-            <col style="width:25%;" />
-            <col style="width:25%;" />
-            <col style="width:25%;" />
-            <col style="width:25%;" />
-        </colgroup>
-        <thead>
-            <tr>
-                <th>Sản phẩm</th>
-                <th class="text-center">Giá</th>
-                <th class="text-center">Số lượng</th>
-                <th class="text-center" style="width:120px;">Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.CartItems)
-            {
-                <tr>
-                    <td class="align-middle">
-                        <div class="d-flex align-items-center">
-                            @if (!string.IsNullOrEmpty(item.Image))
-                            {
-                                <img src="@item.Image" alt="@item.Product.ProductName" style="width:60px; height:60px; object-fit:cover;" class="me-3 rounded" />
-                            }
-                            <div>
-                                <div class="fw-bold">@item.Product.ProductName</div>
-                                <div class="text-muted small">SKU: @(item.Product.Sku ?? "N/A")</div>
+    @if (Model == null)
+    {
+        <div class="empty-cart">
+            <div class="empty-cart-icon">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h3>Cart = null (chưa tạo cart cho user)</h3>
+        </div>
+    }
+    else if (!Model.CartItems.Any())
+    {
+        <!-- Empty Cart State -->
+        <div class="empty-cart">
+            <div class="empty-cart-icon">
+                <i class="bi bi-cart-x"></i>
+            </div>
+            <h3>Giỏ hàng trống</h3>
+            <p>Hãy thêm sản phẩm vào giỏ để tiếp tục mua sắm</p>
+            <a asp-controller="Product" asp-action="Index" class="btn btn-primary btn-lg">
+                <i class="bi bi-bag-plus me-2"></i> Khám phá sản phẩm
+            </a>
+        </div>
+    }
+    else
+    {
+        @* ✅ GIỮ NGUYÊN: Single antiforgery token for JS *@
+        <div id="afToken" style="display:none;">
+            @Html.AntiForgeryToken()
+        </div>
+
+        <div class="row g-4">
+            <!-- Cart Items (Left Column) -->
+            <div class="col-lg-8">
+                <div class="cart-items">
+                    @foreach (var item in Model.CartItems)
+                    {
+                        <div class="cart-item">
+                            <!-- Product Image -->
+                            <div class="cart-item-image">
+                                @if (!string.IsNullOrEmpty(item.Image))
+                                {
+                                    <img src="@item.Image" alt="@item.Product.ProductName" />
+                                }
+                                else
+                                {
+                                    <div class="no-image">
+                                        <i class="bi bi-image"></i>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Product Info -->
+                            <div class="cart-item-info">
+                                <h5 class="cart-item-name">@item.Product.ProductName</h5>
+                                <p class="cart-item-sku">SKU: @(item.Product.Sku ?? "N/A")</p>
+
+                                @* ✅ GIỮ NGUYÊN: data-unitprice using invariant format so JS can parse reliably *@
+                                <div class="cart-item-price" data-unitprice="@(item.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                                    <span class="price-label">Đơn giá:</span>
+                                    <span class="price">@item.UnitPrice.ToString("N0")₫</span>
+                                </div>
+                            </div>
+
+                            <!-- Actions Column -->
+                            <div class="cart-item-actions">
+                                <!-- Quantity Controls -->
+                                <div class="quantity-section">
+                                    <label class="qty-label">Số lượng:</label>
+                                    <div class="quantity-control">
+                                        <button type="button" class="qty-btn qty-minus" data-cartitemid="@item.CartItemId">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+
+                                        @* ✅ GIỮ NGUYÊN: Inline numeric input — no submit button. JS will POST to Cart/Update *@
+                                        <input type="number"
+                                               min="1"
+                                               value="@item.Quantity"
+                                               class="form-control form-control-sm cart-quantity-input qty-input"
+                                               data-cartitemid="@item.CartItemId"
+                                               readonly />
+
+                                        <button type="button" class="qty-btn qty-plus" data-cartitemid="@item.CartItemId">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Subtotal -->
+                                <div class="cart-item-subtotal">
+                                    <span class="subtotal-label">Tổng cộng:</span>
+                                    <span class="subtotal-price">@((item.UnitPrice * item.Quantity).ToString("N0"))₫</span>
+                                </div>
+
+                                <!-- Remove Button -->
+                                @* ✅ GIỮ NGUYÊN: Remove form với confirm *@
+                                <form asp-controller="Cart" asp-action="Remove" method="post"
+                                      onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?');"
+                                      style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="cartItemId" value="@item.CartItemId" />
+                                    <button type="submit" class="btn-remove" title="Xóa">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                    </td>
+                    }
+                </div>
 
-                    @* Add data-unitprice using invariant format so JS can parse reliably *@
-                    <td class="align-middle text-center" data-unitprice="@(item.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture))">
-                        @item.UnitPrice.ToString("N0") ₫
-                    </td>
-
-                    @* visible quantity cell that we will update after AJAX success *@
-                    <td class="cart-qty-display align-middle text-center">@item.Quantity</td>
-                    <td class="align-middle text-center">
-                        <div class="d-flex gap-2 align-items-center justify-content-center">
-                            <form asp-controller="Cart" asp-action="Remove" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?');" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="cartItemId" value="@item.CartItemId" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
-
-                            @* Inline numeric input — no submit button. JS will POST to Cart/Update *@
-                            <input type="number"
-                                   min="1"
-                                   value="@item.Quantity"
-                                   class="form-control form-control-sm cart-quantity-input"
-                                   style="width:70px;"
-                                   data-cartitemid="@item.CartItemId" />
-                        </div>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    @* Checkout summary and buttons (fixed: use inline expression to avoid nested @{ } inside @if/@else) *@
-    <div class="d-flex justify-content-end mt-3">
-        <div class="card" style="width:360px;">
-            <div class="card-body">
-                <p class="mb-2"><strong>Tổng tiền:</strong> <span id="cartTotal" class="text-danger fs-5">@((Model.CartItems.Sum(i => i.UnitPrice * i.Quantity)).ToString("N0")) ₫</span></p>
-                <p class="text-muted small mb-3">Phí vận chuyển và chi tiết thanh toán sẽ được chọn ở trang thanh toán.</p>
-                <div class="d-grid gap-2">
-                    <a asp-controller="Order" asp-action="Checkout" class="btn btn-success btn-lg">
-                        <i class="bi bi-credit-card"></i> Thanh toán
-                    </a>
-                    <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Tiếp tục mua sắm
+                <!-- Continue Shopping Button -->
+                <div class="mt-4">
+                    <a asp-controller="Product" asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i> Tiếp tục mua sắm
                     </a>
                 </div>
             </div>
+
+            <!-- Order Summary (Right Column) -->
+            <div class="col-lg-4">
+                <div class="order-summary sticky-top" style="top: 100px;">
+                    <h4 class="summary-title">Tóm tắt đơn hàng</h4>
+
+                    <div class="summary-row">
+                        <span>Tạm tính:</span>
+                        @* ✅ GIỮ NGUYÊN: cartTotal ID để JS update được *@
+                        <span id="cartTotal">@((Model.CartItems.Sum(i => i.UnitPrice * i.Quantity)).ToString("N0"))₫</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span>Phí vận chuyển:</span>
+                        <span class="text-muted">Tính sau</span>
+                    </div>
+
+                    <div class="summary-divider"></div>
+
+                    <div class="summary-row summary-total">
+                        <span>Tổng cộng:</span>
+                        <span class="total-price">@((Model.CartItems.Sum(i => i.UnitPrice * i.Quantity)).ToString("N0"))₫</span>
+                    </div>
+
+                    <div class="summary-note">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Phí vận chuyển và chi tiết thanh toán sẽ được chọn ở trang thanh toán.</small>
+                    </div>
+
+                    <a asp-controller="Order" asp-action="Checkout" class="btn btn-checkout">
+                        <i class="bi bi-lock-fill me-2"></i> Thanh toán
+                    </a>
+
+                    <!-- Trust Badges -->
+                    <div class="trust-badges">
+                        <div class="trust-item">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Thanh toán an toàn</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="bi bi-truck"></i>
+                            <span>Giao hàng nhanh</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="bi bi-arrow-repeat"></i>
+                            <span>Đổi trả 30 ngày</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/cart.css" asp-append-version="true" />
 }
+
 @section Scripts {
+    @* ✅ GIỮ NGUYÊN 100% LOGIC JAVASCRIPT CŨ *@
     <script>
         (function () {
             // small debounce helper
@@ -123,23 +218,30 @@ else
 
             // Recalculate total from DOM (data-unitprice and quantity inputs / display)
             function recalcTotal() {
-                const rows = document.querySelectorAll('table tbody tr');
+                const items = document.querySelectorAll('.cart-item');
                 let sum = 0;
-                rows.forEach(row => {
-                    const unitTd = row.querySelector('[data-unitprice]');
+
+                items.forEach(item => {
+                    const unitTd = item.querySelector('[data-unitprice]');
                     if (!unitTd) return;
+
                     // parse invariant decimal from attribute
                     const unit = parseFloat(unitTd.getAttribute('data-unitprice').replace(',', '.')) || 0;
 
-                    const qtyInput = row.querySelector('.cart-quantity-input');
-                    const qtyDisplay = row.querySelector('.cart-qty-display');
+                    const qtyInput = item.querySelector('.cart-quantity-input');
                     let qty = 0;
                     if (qtyInput) {
                         qty = parseInt(qtyInput.value, 10) || 0;
-                    } else if (qtyDisplay) {
-                        qty = parseInt(qtyDisplay.textContent.trim(), 10) || 0;
                     }
-                    sum += unit * qty;
+
+                    const subtotal = unit * qty;
+                    sum += subtotal;
+
+                    // Update item subtotal display
+                    const subtotalEl = item.querySelector('.subtotal-price');
+                    if (subtotalEl) {
+                        subtotalEl.textContent = formatNumber(subtotal) + '₫';
+                    }
                 });
 
                 const totalEl = document.getElementById('cartTotal');
@@ -181,10 +283,10 @@ else
                     if (contentType.indexOf('application/json') !== -1) {
                         const data = await res.json();
                         if (data?.success) {
-                            // Update visible quantity cell in the same row
-                            const row = inputEl.closest('tr');
-                            const qtyCell = row.querySelector('.cart-qty-display');
-                            if (qtyCell) qtyCell.textContent = (data.quantity != null ? data.quantity : quantity);
+                            // Update input value
+                            if (data.quantity != null) {
+                                inputEl.value = data.quantity;
+                            }
 
                             // Update cart badge if controller returned new count
                             const badge = document.getElementById('cartBadge');
@@ -216,6 +318,32 @@ else
             }, 600);
 
             inputs.forEach(i => i.addEventListener('input', handler));
+
+            // ✅ THÊM: Handle + - buttons
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('.qty-btn');
+                if (!btn) return;
+
+                const cartItemId = btn.dataset.cartitemid;
+                const itemElement = btn.closest('.cart-item');
+                const input = itemElement.querySelector('.cart-quantity-input');
+
+                if (!input) return;
+
+                let currentQty = parseInt(input.value, 10) || 1;
+                let newQty = currentQty;
+
+                if (btn.classList.contains('qty-plus')) {
+                    newQty = currentQty + 1;
+                } else if (btn.classList.contains('qty-minus')) {
+                    newQty = Math.max(1, currentQty - 1);
+                }
+
+                if (newQty !== currentQty) {
+                    input.value = newQty;
+                    sendUpdate(cartItemId, newQty, input);
+                }
+            });
 
             // Ensure total is correct on initial load
             document.addEventListener('DOMContentLoaded', recalcTotal, false);

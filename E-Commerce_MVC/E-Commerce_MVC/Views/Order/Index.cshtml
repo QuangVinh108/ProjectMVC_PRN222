@@ -3,12 +3,34 @@
     ViewData["Title"] = "Đơn hàng của tôi";
 }
 
-<div class="container mt-4">
-    <h2>@ViewData["Title"]</h2>
+<!-- Modern Order History Page -->
+<div class="container py-5">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="fw-bold mb-2">
+                        <i class="bi bi-bag-check text-primary me-2"></i>
+                        @ViewData["Title"]
+                    </h1>
+                    <p class="text-muted mb-0">Quản lý và theo dõi đơn hàng của bạn</p>
+                </div>
+                @if (Model != null && Model.Any())
+                {
+                    <div class="badge bg-primary fs-6 px-3 py-2">
+                        @Model.Count đơn hàng
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
 
+    <!-- Alert Messages -->
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
             @TempData["Success"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -16,73 +38,183 @@
 
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
             @TempData["Error"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
+    <!-- Empty State -->
     @if (Model == null || !Model.Any())
     {
-        <div class="alert alert-info">
-            <p class="mb-0">Bạn chưa có đơn hàng nào. <a href="/Cart">Mua sắm ngay!</a></p>
+        <div class="empty-state text-center py-5">
+            <div class="empty-state-icon mb-4">
+                <i class="bi bi-cart-x display-1 text-muted"></i>
+            </div>
+            <h3 class="mb-3">Chưa có đơn hàng nào</h3>
+            <p class="text-muted mb-4">Bạn chưa thực hiện đơn hàng nào. Hãy khám phá sản phẩm và mua sắm ngay!</p>
+            <a href="/Shop" class="btn btn-primary btn-lg">
+                <i class="bi bi-shop me-2"></i>
+                Khám phá sản phẩm
+            </a>
         </div>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Mã đơn hàng</th>
-                        <th>Ngày đặt</th>
-                        <th>Trạng thái</th>
-                        <th>Tổng tiền</th>
-                        <th>Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var order in Model)
-                    {
-                        <tr>
-                            <td><strong>#@order.OrderId</strong></td>
-                            <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>
+        <!-- Orders List - Card Layout for Mobile, Table for Desktop -->
+        <!-- Desktop View (Table) -->
+        <div class="d-none d-lg-block">
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 modern-order-table">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="border-0 px-4 py-3">Mã đơn hàng</th>
+                                <th class="border-0 py-3">Ngày đặt</th>
+                                <th class="border-0 py-3">Trạng thái</th>
+                                <th class="border-0 py-3">Tổng tiền</th>
+                                <th class="border-0 py-3 text-end pe-4">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model)
+                            {
+                                <tr class="order-row">
+                                    <td class="px-4">
+                                        <strong class="text-primary">#@order.OrderId</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-calendar3 text-muted"></i>
+                                            <span>@order.OrderDate.ToString("dd/MM/yyyy")</span>
+                                        </div>
+                                        <small class="text-muted">@order.OrderDate.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        @if (order.Status == "Pending")
+                                        {
+                                            <span class="status-badge status-pending">
+                                                <i class="bi bi-clock-history"></i> Chờ xử lý
+                                            </span>
+                                        }
+                                        else if (order.Status == "Paid")
+                                        {
+                                            <span class="status-badge status-paid">
+                                                <i class="bi bi-credit-card"></i> Đã thanh toán
+                                            </span>
+                                        }
+                                        else if (order.Status == "Shipped")
+                                        {
+                                            <span class="status-badge status-shipped">
+                                                <i class="bi bi-truck"></i> Đang giao
+                                            </span>
+                                        }
+                                        else if (order.Status == "Delivered")
+                                        {
+                                            <span class="status-badge status-delivered">
+                                                <i class="bi bi-check-circle"></i> Đã giao
+                                            </span>
+                                        }
+                                        else if (order.Status == "Cancelled")
+                                        {
+                                            <span class="status-badge status-cancelled">
+                                                <i class="bi bi-x-circle"></i> Đã hủy
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge status-default">
+                                                @order.Status
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong class="text-danger fs-5">@order.TotalAmount.ToString("N0") ₫</strong>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="@Url.Action("Details", new { id = order.OrderId })"
+                                           class="btn btn-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i> Xem chi tiết
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile View (Cards) -->
+        <div class="d-lg-none">
+            @foreach (var order in Model)
+            {
+                <div class="card order-card mb-3 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="mb-1">
+                                    <strong class="text-primary">#@order.OrderId</strong>
+                                </h5>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar3 me-1"></i>
+                                    @order.OrderDate.ToString("dd/MM/yyyy HH:mm")
+                                </small>
+                            </div>
+                            <div>
                                 @if (order.Status == "Pending")
                                 {
-                                    <span class="badge bg-warning text-dark">Chờ xử lý</span>
+                                    <span class="status-badge status-pending">
+                                        <i class="bi bi-clock-history"></i> Chờ xử lý
+                                    </span>
                                 }
                                 else if (order.Status == "Paid")
                                 {
-                                    <span class="badge bg-info">Đã thanh toán</span>
+                                    <span class="status-badge status-paid">
+                                        <i class="bi bi-credit-card"></i> Đã thanh toán
+                                    </span>
                                 }
                                 else if (order.Status == "Shipped")
                                 {
-                                    <span class="badge bg-primary">Đang giao</span>
+                                    <span class="status-badge status-shipped">
+                                        <i class="bi bi-truck"></i> Đang giao
+                                    </span>
                                 }
                                 else if (order.Status == "Delivered")
                                 {
-                                    <span class="badge bg-success">Đã giao</span>
+                                    <span class="status-badge status-delivered">
+                                        <i class="bi bi-check-circle"></i> Đã giao
+                                    </span>
                                 }
                                 else if (order.Status == "Cancelled")
                                 {
-                                    <span class="badge bg-danger">Đã hủy</span>
+                                    <span class="status-badge status-cancelled">
+                                        <i class="bi bi-x-circle"></i> Đã hủy
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary">@order.Status</span>
+                                    <span class="status-badge status-default">
+                                        @order.Status
+                                    </span>
                                 }
-                            </td>
-                            <td><strong>@order.TotalAmount.ToString("N0") ₫</strong></td>
-                            <td>
-                                <a href="@Url.Action("Details", new { id = order.OrderId })" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-eye"></i> Xem chi tiết
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <div>
+                                <small class="text-muted d-block mb-1">Tổng tiền</small>
+                                <strong class="text-danger fs-4">@order.TotalAmount.ToString("N0") ₫</strong>
+                            </div>
+                            <a href="@Url.Action("Details", new { id = order.OrderId })"
+                               class="btn btn-primary">
+                                <i class="bi bi-eye me-1"></i> Chi tiết
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     }
 </div>

@@ -26,7 +26,7 @@
     @if (ViewContext.RouteData.Values["Controller"]?.ToString() != "Account")
     {
         <header>
-            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
                 <div class="container-fluid px-4">
                     <a class="navbar-brand fw-bold fs-3" asp-controller="Home" asp-action="Index">
                         <i class="bi bi-shop text-primary"></i> E-Shop
@@ -183,32 +183,6 @@
                                     <span>24/7 hỗ trợ</span>
                                 </li>
                             </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Newsletter Section -->
-            <div class="footer-newsletter">
-                <div class="container-fluid px-4 px-lg-5">
-                    <div class="row align-items-center">
-                        <div class="col-lg-6 mb-3 mb-lg-0">
-                            <h4 class="newsletter-title">
-                                <i class="bi bi-envelope-heart"></i>
-                                Đăng ký nhận ưu đãi
-                            </h4>
-                            <p class="newsletter-subtitle">Nhận ngay voucher 100.000₫ cho đơn đầu tiên</p>
-                        </div>
-                        <div class="col-lg-6">
-                            <form class="newsletter-form">
-                                <div class="input-group">
-                                    <input type="email" class="form-control" placeholder="Nhập email của bạn...">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="bi bi-send"></i>
-                                        Đăng ký
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     </div>
                 </div>

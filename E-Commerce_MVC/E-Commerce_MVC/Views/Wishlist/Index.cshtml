@@ -3,147 +3,167 @@
     ViewData["Title"] = "Wishlist của bạn";
 }
 
-<div class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">
-            <i class="bi bi-heart-fill text-danger me-2"></i>
-            Wishlist
-        </h2>
-        @if (Model?.Any() == true)
-        {
-            <form asp-action="Clear" method="post" class="d-inline" onsubmit="return confirm('Xóa toàn bộ wishlist?')">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-outline-danger btn-sm">
-                    <i class="bi bi-trash3"></i> Xóa tất cả
-                </button>
-            </form>
-        }
+<div class="wishlist-page">
+    <!-- Header -->
+    <div class="wishlist-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="wishlist-title">
+                    <i class="bi bi-heart-fill"></i> Wishlist của bạn
+                </h1>
+                @if (Model?.Any() == true)
+                {
+                    <p class="wishlist-subtitle">Bạn có @Model.Count() sản phẩm trong danh sách yêu thích</p>
+                }
+            </div>
+            <div class="header-actions">
+                <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-primary">
+                    <i class="bi bi-shop me-2"></i> Tiếp tục mua sắm
+                </a>
+                @* ✅ GIỮ NGUYÊN: Clear All form *@
+                @if (Model?.Any() == true)
+                {
+                    <form asp-action="Clear" method="post" class="d-inline" onsubmit="return confirm('Xóa toàn bộ wishlist?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-trash3 me-2"></i> Xóa tất cả
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
     </div>
 
+    @* ✅ GIỮ NGUYÊN: Empty state check *@
     @if (!Model?.Any() ?? true)
     {
-        <div class="text-center py-5 border rounded bg-light">
-            <i class="bi bi-heart display-4 text-muted opacity-50 mb-3"></i>
-            <h5 class="text-muted">Wishlist trống</h5>
-            <p class="text-muted">Chưa có sản phẩm nào trong wishlist của bạn.</p>
-            <a asp-controller="Shop" asp-action="Index" class="btn btn-primary">
-                <i class="bi bi-shop"></i> Xem sản phẩm
+        <!-- Empty Wishlist State -->
+        <div class="empty-wishlist">
+            <div class="empty-wishlist-icon">
+                <i class="bi bi-heart"></i>
+            </div>
+            <h3>Wishlist trống</h3>
+            <p>Chưa có sản phẩm nào trong wishlist của bạn.</p>
+            <a asp-controller="Shop" asp-action="Index" class="btn btn-primary btn-lg">
+                <i class="bi bi-shop me-2"></i> Xem sản phẩm
             </a>
         </div>
     }
     else
     {
-        <div class="card shadow-sm">
-            <div class="card-header bg-light">
-                <strong>Tổng: @Model.Count() sản phẩm</strong>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-dark">
-                            <tr>
-                                <th style="width: 60px;"></th>
-                                <th>Sản phẩm</th>
-                                <th style="width: 80px;">Giá</th>
-                                <th style="width: 120px;">Ngày thêm</th>
-                                <th style="max-width: 200px;">Ghi chú</th>
-                                <th style="width: 120px;">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                <tr>
-                                    <td class="text-center">
-                                        @if (!string.IsNullOrEmpty(item.ProductImage))
-                                        {
-                                            <img src="@Url.Content(item.ProductImage)"
-                                                 width="50" height="50"
-                                                 class="rounded shadow-sm object-fit-cover"
-                                                 alt="@item.ProductName"
-                                                 title="@item.ProductName" />
-                                        }
-                                        else
-                                        {
-                                            <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                                                 style="width:50px;height:50px;">
-                                                <i class="bi bi-image text-muted"></i>
-                                            </div>
-                                        }
-                                    </td>
-                                    <td>
-                                        <strong>@item.ProductName</strong>
-                                        <br>
-                                        <small class="text-muted">
-                                            ID: @item.ProductId |
-                                            SKU: @(item.Sku ?? "-") |
-                                            SL: @item.Quantity
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <strong class="text-success fs-5">
-                                            @item.Price.ToString("N0") ₫
-                                        </strong>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark small">
-                                            @item.AddedAt.ToString("dd/MM/yy HH:mm")
-                                        </span>
-                                    </td>
-                                    <td class="small">
-                                        @if (!string.IsNullOrEmpty(item.Note))
-                                        {
-                                            <span class="text-truncate d-block" style="max-width: 180px;" title="@item.Note">
-                                                <i class="bi bi-chat-square-text me-1 text-primary"></i>
-                                                @item.Note
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">-</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <div class="d-flex justify-content-center align-items-center gap-2">
-                                            <a asp-controller="Shop" asp-action="Details" asp-route-id="@item.ProductId"
-                                               class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
-                                               style="width:32px;height:32px;" title="Xem chi tiết">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <button onclick="addToCart(@item.ProductId, event)"
-                                                    class="btn btn-outline-success" title="Thêm vào giỏ">
-                                                <i class="bi bi-cart-plus"></i>
-                                            </button>
-                                            @* <form asp-action="Remove" asp-route-wishlistProductId="@item.WishlistProductId" *@
-                                            @*       class="d-inline" method="post" *@
-                                            @*       onsubmit="return confirm('Xóa @item.ProductName khỏi wishlist?')"> *@
-                                            @*     @Html.AntiForgeryToken() *@
-                                            @*     <button type="submit" class="btn btn-outline-danger" title="Xóa"> *@
-                                            @*         <i class="bi bi-trash"></i> *@
-                                            @*     </button> *@
-                                            @* </form> *@
+        <div class="wishlist-grid">
+            @foreach (var item in Model)
+            {
+                <div class="wishlist-card">
+                    <!-- Product Image -->
+                    <div class="wishlist-card-image">
+                        @* ✅ GIỮ NGUYÊN: Image check và Url.Content *@
+                        @if (!string.IsNullOrEmpty(item.ProductImage))
+                        {
+                            <img src="@Url.Content(item.ProductImage)" alt="@item.ProductName" />
+                        }
+                        else
+                        {
+                            <div class="no-image">
+                                <i class="bi bi-image"></i>
+                            </div>
+                        }
 
-                                            <form id="remove-@item.WishlistProductId" asp-action="Remove"
-                                                  asp-route-wishlistProductId="@item.WishlistProductId" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-outline-danger">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                        <!-- Quick Actions Overlay -->
+                        <div class="image-overlay">
+                            @* ✅ GIỮ NGUYÊN: onclick addToCart với AJAX *@
+                            <button onclick="addToCart(@item.ProductId, event)"
+                                    class="btn-overlay btn-add-cart"
+                                    title="Thêm vào giỏ">
+                                <i class="bi bi-cart-plus"></i>
+                            </button>
+
+                            @* ✅ GIỮ NGUYÊN: View details link *@
+                            <a asp-controller="Shop"
+                               asp-action="Details"
+                               asp-route-id="@item.ProductId"
+                               class="btn-overlay btn-view"
+                               title="Xem chi tiết">
+                                <i class="bi bi-eye"></i>
+                            </a>
+
+                            @* ✅ GIỮ NGUYÊN: Remove form với asp-route-wishlistProductId *@
+                            <form id="remove-@item.WishlistProductId"
+                                  asp-action="Remove"
+                                  asp-route-wishlistProductId="@item.WishlistProductId"
+                                  method="post"
+                                  class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn-overlay btn-remove" title="Xóa">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="wishlist-card-body">
+                        <h5 class="product-name">@item.ProductName</h5>
+
+                        @* ✅ GIỮ NGUYÊN: Product meta info *@
+                        <div class="product-meta">
+                            <span class="meta-item">
+                                <i class="bi bi-tag"></i> ID: @item.ProductId
+                            </span>
+                            <span class="meta-item">
+                                <i class="bi bi-upc"></i> SKU: @(item.Sku ?? "-")
+                            </span>
+                            <span class="meta-item">
+                                <i class="bi bi-box"></i> SL: @item.Quantity
+                            </span>
+                        </div>
+
+                        @* ✅ GIỮ NGUYÊN: Price format *@
+                        <div class="product-price">
+                            <span class="price">@item.Price.ToString("N0")₫</span>
+                        </div>
+
+                        @* ✅ GIỮ NGUYÊN: Note display with check *@
+                        @if (!string.IsNullOrEmpty(item.Note))
+                        {
+                            <div class="product-note" title="@item.Note">
+                                <i class="bi bi-chat-square-text"></i>
+                                <span class="note-text">@item.Note</span>
+                            </div>
+                        }
+
+                        @* ✅ GIỮ NGUYÊN: AddedAt format *@
+                        <div class="added-date">
+                            <i class="bi bi-clock"></i>
+                            Đã thêm: @item.AddedAt.ToString("dd/MM/yy HH:mm")
+                        </div>
+                    </div>
+
+                    <!-- Card Footer Actions -->
+                    <div class="wishlist-card-footer">
+                        @* ✅ GIỮ NGUYÊN: Add to cart button với onclick AJAX *@
+                        <button onclick="addToCart(@item.ProductId, event)"
+                                class="btn btn-success btn-sm flex-fill">
+                            <i class="bi bi-cart-plus me-1"></i> Thêm vào giỏ
+                        </button>
+
+                        @* ✅ GIỮ NGUYÊN: View details link *@
+                        <a asp-controller="Shop"
+                           asp-action="Details"
+                           asp-route-id="@item.ProductId"
+                           class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </div>
                 </div>
-            </div>
+            }
         </div>
     }
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    @* ✅ GIỮ NGUYÊN 100% TẤT CẢ JAVASCRIPT *@
     <script>
         // 1. Add to Cart AJAX
         async function addToCart(productId, event) {
@@ -208,8 +228,8 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    form.closest('tr').style.opacity = '0.5';
-                    form.remove();
+                    form.closest('.wishlist-card').style.opacity = '0.5';
+                    setTimeout(() => form.closest('.wishlist-card').remove(), 300);
                     showToast(result.message || 'Đã xóa!', 'success');
                     updateWishlistBadge();  // Update navbar
                 } else {
@@ -280,7 +300,7 @@
             });
 
             // Remove forms
-                    document.querySelectorAll('form[asp-action="Remove"]').forEach(form => {
+            document.querySelectorAll('form[asp-action="Remove"]').forEach(form => {
                 const wishlistProductId = form.getAttribute('asp-route-wishlistProductId') ||
                                          form.dataset.wishlistProductId ||
                                          form.querySelector('input[name="wishlistProductId"]')?.value;
@@ -295,3 +315,6 @@
     </script>
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/wishlist.css" asp-append-version="true" />
+}
