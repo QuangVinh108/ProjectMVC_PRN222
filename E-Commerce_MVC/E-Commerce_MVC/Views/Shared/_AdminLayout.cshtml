@@ -6,8 +6,9 @@
     <title>@ViewData["Title"] - Admin Panel</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
-    <link rel="stylesheet" href="~/css/admin.css" /> <!-- CSS riêng cho Admin -->
+    <link rel="stylesheet" href="~/css/admin.css" /> @await RenderSectionAsync("Styles", required: false)
 </head>
+
 <body class="admin-body">
     <!-- ✅ SIDEBAR CHO ADMIN -->
     <div class="d-flex" id="wrapper">
