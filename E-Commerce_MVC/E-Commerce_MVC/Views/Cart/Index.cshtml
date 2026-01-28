@@ -62,17 +62,20 @@
                         <div class="cart-item">
                             <!-- Product Image -->
                             <div class="cart-item-image">
-                                @if (!string.IsNullOrEmpty(item.Image))
+                                @{
+                                    var img = item.Product?.Image;
+                                }
+
+                                @if (!string.IsNullOrEmpty(img))
                                 {
-                                    <img src="@item.Image" alt="@item.Product.ProductName" />
+                                    <img src="@Url.Content(img)" alt="@item.Product.ProductName" />
                                 }
                                 else
                                 {
-                                    <div class="no-image">
-                                        <i class="bi bi-image"></i>
-                                    </div>
+                                    <div class="no-image"><i class="bi bi-image"></i></div>
                                 }
                             </div>
+
 
                             <!-- Product Info -->
                             <div class="cart-item-info">
