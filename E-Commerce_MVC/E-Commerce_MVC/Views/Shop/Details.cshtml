@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = Model.ProductName;
 }
+
 <div class="container pt-4">
     <button id="smartBackBtn" onclick="smartBack()" class="btn btn-outline-secondary btn-back">
         <i id="backButtonIcon" class="bi bi-arrow-left"></i>
@@ -14,7 +15,6 @@
     <div class="row gx-5">
         <div class="col-lg-6 mb-4">
             <div class="border rounded-4 p-3 bg-light text-center d-flex align-items-center justify-content-center" style="min-height: 400px;">
-
                 @if (!string.IsNullOrEmpty(Model.Image))
                 {
                     <img src="@Model.Image" class="img-fluid rounded shadow-sm" style="max-height: 500px; object-fit: contain;" alt="@Model.ProductName">
@@ -23,7 +23,6 @@
                 {
                     <img src="https://placehold.co/600x600?text=No+Image" class="img-fluid rounded opacity-50" alt="@Model.ProductName">
                 }
-
             </div>
         </div>
 
@@ -44,33 +43,32 @@
                     @(Model.Description ?? "Sản phẩm này chưa có mô tả chi tiết.")
                 </p>
 
-                <!-- Add-to-cart form (posts to CartController.Add) -->
+                <!-- Add-to-cart form -->
                 <form asp-controller="Cart" asp-action="Add" method="post" class="d-flex gap-3 align-items-center mb-4 add-to-cart-form">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="productId" value="@Model.ProductId" />
-                    <input type="number" name="quantity" class="form-control" value="1" min="1" style="width: 80px;" />
+                    <input type="number" name="quantity" class="form-control quantity-input" value="1" min="1" style="width: 80px;" />
                     <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                         <i class="bi bi-cart-plus me-2"></i> Thêm vào giỏ hàng
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-lg" title="Yêu thích">
-                        <i class="bi bi-heart"></i>
+                    <button type="button"
+                            class="btn btn-outline-danger btn-lg wishlist-toggle-detail"
+                            data-product-id="@Model.ProductId"
+                            title="Thêm vào yêu thích">
+                        <i class="bi bi-heart wishlist-icon"></i>
                     </button>
                 </form>
 
-                <form asp-controller="Order"
-                      asp-action="BuyNow"
-                      method="post"
-                      class="mt-3">
+                <!-- Buy Now form -->
+                <form asp-controller="Order" asp-action="BuyNow" method="post" class="mt-3 buy-now-form">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="productId" value="@Model.ProductId" />
-                    <input type="hidden" name="quantity" value="1" />
+                    <input type="hidden" name="quantity" class="buy-now-quantity" value="1" />
 
                     <button type="submit" class="btn btn-danger btn-lg w-100">
                         <i class="bi bi-lightning-fill me-1"></i> Mua ngay
                     </button>
                 </form>
-
-
 
                 <div class="border-top pt-4 mt-4">
                     <div class="d-flex align-items-center mb-2">
@@ -87,13 +85,41 @@
     </div>
 </div>
 
+<!-- Modal yêu cầu đăng nhập -->
+<div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-white border-0">
+                <h5 class="modal-title fw-bold" id="loginRequiredModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Yêu cầu đăng nhập
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-person-lock fs-1 text-warning"></i>
+                </div>
+                <h6 class="fw-bold mb-2">Bạn cần đăng nhập để thực hiện chức năng này</h6>
+                <p class="text-muted mb-0">Vui lòng đăng nhập để tiếp tục mua sắm</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Để sau</button>
+                <a href="/Account/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path)" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập ngay
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        // ============================================
+        // 1. SMART BACK BUTTON
+        // ============================================
         function smartBack() {
             const referrer = document.referrer;
             const currentHost = window.location.hostname;
-
-            console.log('Referrer:', referrer);
 
             if (referrer && referrer.includes(currentHost)) {
                 if (referrer.toLowerCase().includes('/wishlist')) {
@@ -110,7 +136,6 @@
             }
         }
 
-        // Update button text và icon dựa trên nguồn
         function updateBackButton() {
             const backBtn = document.getElementById('smartBackBtn');
             const backText = document.getElementById('backButtonText');
@@ -135,12 +160,17 @@
             }
         }
 
-        // Chạy khi page load
-        document.addEventListener('DOMContentLoaded', function() {
-            updateBackButton();
-        });
+        // ============================================
+        // 2. SHOW LOGIN MODAL
+        // ============================================
+        function showLoginModal() {
+            const modal = new bootstrap.Modal(document.getElementById('loginRequiredModal'));
+            modal.show();
+        }
 
-        // Optional AJAX submit to keep user on product page and update the cart badge
+        // ============================================
+        // 3. ADD TO CART WITH AUTH CHECK
+        // ============================================
         (function () {
             const form = document.querySelector('.add-to-cart-form');
             if (!form) return;
@@ -148,45 +178,219 @@
             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 const fd = new FormData(form);
-                try {
-                    // Get antiforgery token from form hidden input
-                    const token = fd.get('__RequestVerificationToken');
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalHTML = submitBtn.innerHTML;
 
+                try {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
+
+                    const token = fd.get('__RequestVerificationToken');
                     const res = await fetch(form.action, {
                         method: 'POST',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
-                            // send token in header that ASP.NET core antiforgery understands
                             'RequestVerificationToken': token
                         },
-                        // Important: include credentials so cookies (auth cookie / jwt cookie) are sent
                         credentials: 'same-origin',
                         body: fd
                     });
 
-                    if (!res.ok) throw new Error('Request failed');
-
                     const data = await res.json();
+
+                    // KIỂM TRA YÊU CẦU ĐĂNG NHẬP
+                    if (data?.requireLogin === true || res.status === 401) {
+                        showLoginModal();
+                        submitBtn.innerHTML = originalHTML;
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
                     if (data?.success) {
-                        // update cart badge if present
+                        // Update cart badge
                         const badge = document.getElementById('cartBadge');
                         if (badge) {
                             badge.textContent = data.count ?? badge.textContent;
                             badge.style.display = (data.count ?? 0) > 0 ? 'block' : 'none';
                         }
-                        // simple feedback
-                        const submitBtn = form.querySelector('button[type="submit"]');
-                        const original = submitBtn.innerHTML;
-                        submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Đã thêm';
-                        setTimeout(() => submitBtn.innerHTML = original, 1200);
+
+                        // Success feedback
+                        submitBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Đã thêm';
+                        submitBtn.classList.remove('btn-primary');
+                        submitBtn.classList.add('btn-success');
+
+                        setTimeout(() => {
+                            submitBtn.innerHTML = originalHTML;
+                            submitBtn.classList.remove('btn-success');
+                            submitBtn.classList.add('btn-primary');
+                            submitBtn.disabled = false;
+                        }, 1500);
                     } else {
                         alert(data?.error ?? 'Không thể thêm vào giỏ hàng');
+                        submitBtn.innerHTML = originalHTML;
+                        submitBtn.disabled = false;
                     }
                 } catch (err) {
-                    console.error(err);
-                    alert('Lỗi khi thêm vào giỏ hàng');
+                    console.error('Add to cart error:', err);
+                    showLoginModal();
+                    submitBtn.innerHTML = originalHTML;
+                    submitBtn.disabled = false;
                 }
             });
         })();
+
+        // ============================================
+        // 4. BUY NOW WITH AUTH CHECK
+        // ============================================
+        (function() {
+            const buyNowForm = document.querySelector('.buy-now-form');
+            if (!buyNowForm) return;
+
+            buyNowForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                // Đồng bộ số lượng từ input Add to Cart
+                const quantityInput = document.querySelector('.quantity-input');
+                const buyNowQuantity = buyNowForm.querySelector('.buy-now-quantity');
+                if (quantityInput && buyNowQuantity) {
+                    buyNowQuantity.value = quantityInput.value;
+                }
+
+                const fd = new FormData(buyNowForm);
+                const submitBtn = buyNowForm.querySelector('button[type="submit"]');
+                const originalHTML = submitBtn.innerHTML;
+
+                try {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
+
+                    const token = fd.get('__RequestVerificationToken');
+                    const res = await fetch(buyNowForm.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'RequestVerificationToken': token
+                        },
+                        credentials: 'same-origin',
+                        body: fd
+                    });
+
+                    const data = await res.json();
+
+                    // KIỂM TRA YÊU CẦU ĐĂNG NHẬP
+                    if (data?.requireLogin === true || res.status === 401) {
+                        showLoginModal();
+                        submitBtn.innerHTML = originalHTML;
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    if (data?.success) {
+                        if (data.redirectUrl) {
+                            window.location.href = data.redirectUrl;
+                        } else {
+                            window.location.href = '/Order/Checkout';
+                        }
+                    } else {
+                        alert(data?.message ?? 'Có lỗi xảy ra');
+                        submitBtn.innerHTML = originalHTML;
+                        submitBtn.disabled = false;
+                    }
+                } catch (err) {
+                    console.error('Buy now error:', err);
+                    showLoginModal();
+                    submitBtn.innerHTML = originalHTML;
+                    submitBtn.disabled = false;
+                }
+            });
+        })();
+
+        // ============================================
+        // 5. WISHLIST TOGGLE WITH AUTH CHECK
+        // ============================================
+        $(function() {
+            const wishlistBtn = $('.wishlist-toggle-detail');
+            if (!wishlistBtn.length) return;
+
+            // Check trạng thái ban đầu
+            (async function checkWishlistStatus() {
+                const productId = wishlistBtn.data('product-id');
+                try {
+                    const res = await fetch(`/Wishlist/Check/${productId}`);
+                    const isInWishlist = await res.json();
+                    const icon = wishlistBtn.find('.wishlist-icon');
+
+                    if (isInWishlist) {
+                        icon.removeClass('bi-heart').addClass('bi-heart-fill');
+                        wishlistBtn.removeClass('btn-outline-danger').addClass('btn-danger');
+                        wishlistBtn.attr('title', 'Xóa khỏi yêu thích');
+                    }
+                } catch(e) {
+                    console.log('Check wishlist fail:', e);
+                }
+            })();
+
+            // Click toggle
+            wishlistBtn.on('click', async function(e) {
+                e.preventDefault();
+                const btn = $(this);
+                const icon = btn.find('.wishlist-icon');
+                const productId = btn.data('product-id');
+                const originalHTML = btn.html();
+
+                btn.prop('disabled', true);
+                btn.html('<span class="spinner-border spinner-border-sm"></span>');
+
+                try {
+                    const token = $('input[name="__RequestVerificationToken"]').first().val();
+                    const res = await fetch(`/Wishlist/Toggle/${productId}`, {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': token,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const data = await res.json();
+
+                    // KIỂM TRA YÊU CẦU ĐĂNG NHẬP
+                    if (data?.requireLogin === true || res.status === 401) {
+                        showLoginModal();
+                        btn.html(originalHTML);
+                        btn.prop('disabled', false);
+                        return;
+                    }
+
+                    if (data?.success) {
+                        btn.html(originalHTML);
+                        if (data.isAdded) {
+                            icon.removeClass('bi-heart').addClass('bi-heart-fill');
+                            btn.removeClass('btn-outline-danger').addClass('btn-danger');
+                            btn.attr('title', 'Xóa khỏi yêu thích');
+                        } else {
+                            icon.removeClass('bi-heart-fill').addClass('bi-heart');
+                            btn.removeClass('btn-danger').addClass('btn-outline-danger');
+                            btn.attr('title', 'Thêm vào yêu thích');
+                        }
+                    } else {
+                        alert(data?.message || 'Lỗi xử lý wishlist');
+                        btn.html(originalHTML);
+                    }
+                } catch(err) {
+                    console.error('Wishlist error:', err);
+                    showLoginModal();
+                    btn.html(originalHTML);
+                } finally {
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // ============================================
+        // 6. INIT ON PAGE LOAD
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            updateBackButton();
+        });
     </script>
 }

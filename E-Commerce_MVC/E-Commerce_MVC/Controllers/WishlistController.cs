@@ -71,6 +71,9 @@ namespace E_Commerce_MVC.Controllers
         [HttpGet("/Wishlist/Check/{productId}")]
         public async Task<IActionResult> Check(int productId)
         {
+            if (!User.Identity.IsAuthenticated)
+                return Json(false);
+
             var result = await _wishlistService.IsProductInWishlistAsync(productId);
             return Json(result);
         }
@@ -78,14 +81,26 @@ namespace E_Commerce_MVC.Controllers
         [HttpPost("/Wishlist/Toggle/{productId}")]
         public async Task<IActionResult> Toggle(int productId)
         {
+            // KIỂM TRA AUTHENTICATION - QUAN TRỌNG
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Json(new
+                {
+                    success = false,
+                    requireLogin = true,
+                    message = "Vui lòng đăng nhập để thêm sản phẩm vào yêu thích"
+                });
+            }
+
             var result = await _wishlistService.ToggleWishlistAsync(productId);
             return Json(new
             {
                 success = result.IsSuccess,
-                isAdded = result.Data,  // true=ADD, false=REMOVE
+                isAdded = result.Data,
                 message = result.Message
             });
         }
+
 
     }
 }
