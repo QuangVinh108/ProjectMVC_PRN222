@@ -89,47 +89,53 @@
     }
 
     <script>
-        // --- HÀM MỚI: XỬ LÝ PREVIEW ẢNH ---
+        // --- 1. PREVIEW ẢNH (Giữ nguyên code của bạn) ---
         function previewImage(input) {
             var previewContainer = document.getElementById('image-preview-container');
             var previewImage = document.getElementById('image-preview');
-
-            // Kiểm tra xem người dùng có chọn file không
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
-
-                // Khi đọc file xong thì gán vào src của thẻ img
                 reader.onload = function(e) {
                     previewImage.src = e.target.result;
-                    previewContainer.classList.remove('d-none'); // Hiện ảnh lên
+                    previewContainer.classList.remove('d-none');
                 }
-
-                reader.readAsDataURL(input.files[0]); // Bắt đầu đọc file
+                reader.readAsDataURL(input.files[0]);
             } else {
-                // Nếu người dùng bấm Cancel khi chọn file -> Ẩn ảnh đi
                 previewImage.src = '#';
                 previewContainer.classList.add('d-none');
             }
         }
 
-        // --- CODE CŨ: XỬ LÝ LOADING SPINNER ---
-        document.querySelector('form').addEventListener('submit', function(e) {
-            // Kiểm tra xem form có hợp lệ không (client-side validation)
-            if (!this.checkValidity()) {
-                return;
-            }
+        // --- 2. XỬ LÝ SUBMIT FORM AN TOÀN ---
+        $(document).ready(function() {
+            $('form').on('submit', function(e) {
+                var form = $(this);
 
-            // Nếu form ok, hiện Loading
-            document.getElementById('ai-loading').classList.remove('d-none');
-            document.getElementById('ai-loading').classList.add('d-flex');
+                // QUAN TRỌNG: Dùng hàm .valid() của jQuery để kiểm tra đồng bộ với ASP.NET Core
+                if (!form.valid()) {
+                    // Nếu form lỗi, jQuery sẽ tự hiện dòng chữ đỏ.
+                    // Ta KHÔNG hiện spinner, và thoát luôn.
+                    return;
+                }
 
-            // Disable nút submit để tránh bấm kép
-            var btn = this.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+                // --- Chỉ chạy xuống đây nếu Form đã HỢP LỆ ---
 
-            // Disable luôn nút Hủy để tránh user click lung tung khi đang loading
-            this.querySelector('a.btn-secondary').classList.add('disabled');
+                // 1. Hiện Loading
+                $('#ai-loading').removeClass('d-none').addClass('d-flex');
+
+                // 2. Disable nút để tránh bấm 2 lần
+                var btn = form.find('button[type="submit"]');
+                // Lưu lại text cũ phòng trường hợp cần restore
+                btn.data('original-text', btn.html());
+                btn.prop('disabled', true);
+                btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...');
+
+                // Disable nút Hủy
+                form.find('a.btn-secondary').addClass('disabled');
+
+                // Lưu ý: Không cần e.preventDefault() vì ta muốn form submit thật sự.
+            });
         });
     </script>
+}
 }

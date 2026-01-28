@@ -222,7 +222,7 @@
     </div>
 </div>
 
-<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+<div class="toast-container position-fixed top-0 end-0 p-3 mt-5" style="z-index: 9999">
     <div id="cartToast" class="toast align-items-center text-white bg-success border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
             <div class="toast-body fs-6 fw-bold">
@@ -231,12 +231,23 @@
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
+<<<<<<< HEAD
     <div id="loginRequiredToast" class="toast align-items-center text-white bg-warning border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
             <div class="toast-body fs-6 fw-bold">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i> Vui lòng đăng nhập để thêm vào yêu thích!
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+=======
+
+    <div id="loginToast" class="toast align-items-center text-bg-warning border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                Vui lòng đăng nhập để dùng Wishlist.
+                <a class="btn btn-sm btn-dark ms-2" id="loginToastBtn" href="#">Đăng nhập</a>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+>>>>>>> 3bf2f195e79f3c3e6861709d75596bc0720b523f
         </div>
     </div>
 </div>
@@ -305,16 +316,26 @@
                 const productId = btn.dataset.productId;
                 try {
                     const res = await fetch(`/Wishlist/Check/${productId}`);
-                    const isInWishlist = await res.json();
+                        const data = await res.json();
                     const icon = btn.querySelector('.wishlist-icon');
 
+<<<<<<< HEAD
                     if (isInWishlist) {
+=======
+                    if (data.isInWishlist) {
+>>>>>>> 3bf2f195e79f3c3e6861709d75596bc0720b523f
                         icon.classList.remove('bi-heart', 'text-white');
                         icon.classList.add('bi-heart-fill', 'text-danger');
                         btn.title = 'Xóa khỏi Wishlist';
                     } else {
+<<<<<<< HEAD
                         icon.classList.add('bi-heart', 'text-white');
                         btn.title = 'Thêm vào yêu thích';
+=======
+                        icon.classList.remove('bi-heart-fill', 'text-danger');
+                        icon.classList.add('bi-heart', 'text-white');
+                        btn.title = 'Thêm vào Wishlist';
+>>>>>>> 3bf2f195e79f3c3e6861709d75596bc0720b523f
                     }
                 } catch(e) {
                     console.log('Check wishlist fail:', e);
@@ -346,6 +367,18 @@
                         }
                     });
 
+<<<<<<< HEAD
+=======
+                     if (res.status === 401) {
+                        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                        document.getElementById("loginToastBtn").href = `/Account/Login?ReturnUrl=${returnUrl}`;
+                        bootstrap.Toast.getOrCreateInstance(document.getElementById("loginToast"),
+                        { autohide: true, delay: 3500, animation: true }).show();
+                        return;
+                     }
+
+                    if (!res.ok) throw new Error('Network error');
+>>>>>>> 3bf2f195e79f3c3e6861709d75596bc0720b523f
                     const data = await res.json();
 
                     // KIỂM TRA YÊU CẦU ĐĂNG NHẬP

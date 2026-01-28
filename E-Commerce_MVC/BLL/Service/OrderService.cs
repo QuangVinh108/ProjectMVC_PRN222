@@ -19,11 +19,11 @@ namespace BLL.Service
             _inventoryService = _inventoryService;
         }
 
-        public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
+        public async Task<OrderDto?> GetOrderByIdAsync(int orderId, int userId)
         {
             var order = await _orderRepo.GetByIdAsync(orderId, includeDetails: true);
-            if (order == null) return null;
-
+            // Check quyền sở hữu
+            if (order == null || order.UserId != userId) return null;
             return MapToOrderDto(order);
         }
 
@@ -41,61 +41,52 @@ namespace BLL.Service
 
         public async Task<OrderDto> CreateOrderAsync(CreateOrderDto dto)
         {
-            // 1. Get user's cart
             var cart = await _cartRepo.GetByUserIdAsync(dto.UserId);
-            if (cart == null || !cart.CartItems.Any())
-                throw new Exception("Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi đặt hàng.");
+            if (cart == null || !cart.CartItems.Any()) throw new Exception("Giỏ hàng trống.");
 
-            // 2. Calculate total
             decimal totalAmount = cart.CartItems.Sum(ci => ci.Quantity * ci.UnitPrice);
 
-            // 3. Create Order
             var order = new Order
             {
                 UserId = dto.UserId,
                 OrderDate = DateTime.Now,
-                Status = "Pending",
+                Status = "Pending", // Hardcode string
                 TotalAmount = totalAmount,
                 Note = dto.Note,
-                IsActive = true
+                IsActive = true,
+                OrderItems = cart.CartItems.Select(ci => new OrderItem
+                {
+                    ProductId = ci.ProductId,
+                    Quantity = ci.Quantity,
+                    UnitPrice = ci.UnitPrice,
+                    // Image = ci.Product.Image
+                }).ToList(),
+                Payment = new Payment
+                {
+                    PaymentMethod = dto.PaymentMethod,
+                    Amount = totalAmount,
+                    Status = "Pending" // Hardcode string
+                },
+                Shipping = new Shipping
+                {
+                    Address = dto.ShippingAddress,
+                    City = dto.City,
+                    Country = dto.Country,
+                    PostalCode = dto.PostalCode
+                }
             };
 
-            // 4. Create OrderItems from CartItems
-            order.OrderItems = cart.CartItems.Select(ci => new OrderItem
-            {
-                ProductId = ci.ProductId,
-                Quantity = ci.Quantity,
-                UnitPrice = ci.UnitPrice,
-                Image = ci.Product?.Image
-            }).ToList();
-
-            // 5. Create Payment record
-            order.Payment = new Payment
-            {
-                PaymentMethod = dto.PaymentMethod,
-                Amount = totalAmount,
-                Status = "Pending",
-                PaidAt = null
-            };
-
-            // 6. Create Shipping record
-            order.Shipping = new Shipping
-            {
-                Address = dto.ShippingAddress,
-                City = dto.City,
-                Country = dto.Country,
-                PostalCode = dto.PostalCode
-            };
-
-            // 7. Save Order
             var createdOrder = await _orderRepo.CreateAsync(order);
-
-            // 8. Clear Cart
             await _cartRepo.ClearCartAsync(dto.UserId);
 
-            // 9. Return OrderDto
-            var result = await _orderRepo.GetByIdAsync(createdOrder.OrderId, includeDetails: true);
-            return MapToOrderDto(result!);
+            return MapToOrderDto(await _orderRepo.GetByIdAsync(createdOrder.OrderId, true)!);
+        }
+        public async Task<OrderDto> CreateOrderBuyNowAsync(int userId, int productId, int quantity, CreateOrderDto dto)
+        {
+            await _cartRepo.AddOrReplaceSingleItemAsync(userId, productId, quantity);
+
+            dto.UserId = userId;
+            return await CreateOrderAsync(dto);
         }
 
         public async Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus)
@@ -155,40 +146,35 @@ namespace BLL.Service
         public async Task<bool> CancelOrderAsync(int orderId, int userId)
         {
             var order = await _orderRepo.GetByIdAsync(orderId);
-            if (order == null) return false;
+            if (order == null || order.UserId != userId) return false;
 
-            if (order.UserId != userId)
-                throw new Exception("Bạn không có quyền hủy đơn hàng này");
-
-            // chỉ cho phép Pending hoặc Paid
+            // Chỉ cho hủy khi Pending hoặc Paid
             if (order.Status != "Pending" && order.Status != "Paid")
-                throw new Exception("Không thể hủy đơn hàng ở trạng thái hiện tại");
+                throw new Exception("Không thể hủy đơn hàng này.");
 
             var oldStatus = order.Status;
-
-            order.Status = "Cancelled";
+            order.Status = "Cancelled"; // Hardcode string
             await _orderRepo.UpdateAsync(order);
 
-            // ✅ QUAN TRỌNG: chỉ hoàn kho nếu đơn ĐÃ TRỪ KHO TRƯỚC ĐÓ
+            // Hoàn kho nếu đã thanh toán
             if (oldStatus == "Paid")
             {
                 await _inventoryService.RestoreInventoryAsync(orderId);
             }
-
             return true;
         }
 
 
 
-        // Helper method to map Order entity to OrderDto
+        // Helper Map
         private OrderDto MapToOrderDto(Order order)
         {
             return new OrderDto
             {
                 OrderId = order.OrderId,
                 UserId = order.UserId,
-                UserName = order.User?.UserName ?? "",
                 FullName = order.User?.FullName ?? "",
+                UserName = order.User?.UserName ?? "",
                 OrderDate = order.OrderDate,
                 Status = order.Status,
                 TotalAmount = order.TotalAmount,
@@ -217,11 +203,7 @@ namespace BLL.Service
                     Address = order.Shipping.Address,
                     City = order.Shipping.City,
                     Country = order.Shipping.Country,
-                    PostalCode = order.Shipping.PostalCode,
-                    Carrier = order.Shipping.Carrier,
-                    TrackingNumber = order.Shipping.TrackingNumber,
-                    ShippedDate = order.Shipping.ShippedDate,
-                    DeliveryDate = order.Shipping.DeliveryDate
+                    PostalCode = order.Shipping.PostalCode
                 } : null
             };
         }

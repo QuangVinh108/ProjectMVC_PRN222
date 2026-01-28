@@ -1,106 +1,63 @@
 ﻿using BLL.DTOs;
 using BLL.IService;
 using DAL.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace E_Commerce_MVC.Controllers
 {
     public class PaymentController : Controller
     {
         private readonly IPaymentService _paymentService;
-        private readonly ShopDbContext _context; // ✅ THÊM DÒNG NÀY
-        private readonly ILogger<PaymentController> _logger;
+        private readonly IOrderService _orderService;
 
-        public PaymentController(
-            IPaymentService paymentService,
-            ShopDbContext context,
-            ILogger<PaymentController> logger) // ✅ INJECT
+        public PaymentController(IPaymentService paymentService, IOrderService orderService)
         {
             _paymentService = paymentService;
-            _context = context;
-            _logger = logger;
+            _orderService = orderService;
         }
 
         // ================== PAY ==================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Pay(int id)
+        [Authorize]
+        public async Task<IActionResult> Pay(int id)
         {
-            var order = _context.Orders
-                .Include(o => o.Payment)
-                .FirstOrDefault(o => o.OrderId == id);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var order = await _orderService.GetOrderByIdAsync(id, userId);
 
-            if (order == null)
-                return NotFound();
+            if (order == null) return NotFound();
 
-            // ❗ Nếu chưa có Payment thì tạo Pending
-            if (order.Payment == null)
-            {
-                order.Payment = new Payment
-                {
-                    OrderId = id,
-                    PaymentMethod = "VNPAY",
-                    Amount = order.TotalAmount,
-                    Status = "Pending",
-                    PaidAt = null
-                };
+            // 1. Tạo Payment Pending (Gọi Service)
+            await _paymentService.CreatePendingPaymentAsync(id, order.TotalAmount);
 
-                _context.SaveChanges();
-            }
-
+            // 2. Tạo URL và Redirect
             var paymentDto = new PaymentDto
             {
                 OrderId = id,
                 Amount = order.TotalAmount,
-                PaymentMethod = "VNPAY",
-                Status = "Pending"
+                PaymentMethod = "VNPAY"
             };
 
-            var paymentUrl = _paymentService.CreateVnPayUrl(paymentDto, HttpContext);
-            return Redirect(paymentUrl);
+            var url = _paymentService.CreateVnPayUrl(paymentDto, HttpContext);
+
+            return Redirect(url);
         }
 
         // ================== VNPAY RETURN ==================
-        public IActionResult VnPayReturn()
+        [HttpGet]
+        public async Task<IActionResult> VnPayReturn()
         {
-            if (_paymentService.HandleVnPayReturn(Request.Query, out int orderId))
-            {
-                var order = _context.Orders
-                    .Include(o => o.Payment)
-                    .FirstOrDefault(o => o.OrderId == orderId);
+            var result = await _paymentService.ProcessVnPayReturnAsync(Request.Query);
 
-                if (order != null && order.Payment != null)
-                {
-                    // ✅ CẬP NHẬT TRẠNG THÁI
-                    order.Status = "Completed";
-                    order.Payment.Status = "Paid";
-                    order.Payment.PaidAt = DateTime.Now;
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
 
-                    _context.SaveChanges();
-                }
+            if (result.OrderId > 0)
+                return RedirectToAction("Details", "Order", new { id = result.OrderId });
 
-                TempData["Success"] = "Thanh toán VNPAY thành công!";
-            }
-            else
-            {
-                var txnRef = Request.Query["vnp_TxnRef"].ToString();
-                orderId = int.Parse(txnRef.Split('_')[0]);
-
-                var order = _context.Orders
-                    .Include(o => o.Payment)
-                    .FirstOrDefault(o => o.OrderId == orderId);
-
-                if (order?.Payment != null)
-                {
-                    order.Payment.Status = "Failed";
-                    _context.SaveChanges();
-                }
-
-                TempData["Error"] = "Thanh toán VNPAY thất bại!";
-            }
-
-            return RedirectToAction("Details", "Order", new { id = orderId });
+            return RedirectToAction("Index", "Order");
         }
 
     }

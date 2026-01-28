@@ -28,8 +28,10 @@ namespace E_Commerce_MVC.Controllers
             return View(model);
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Count()
         {
+            if (!User.Identity?.IsAuthenticated ?? true) return Json(0);
             var result = await _wishlistService.GetWishlistCountAsync();
             return Json(result.IsSuccess ? result.Data : 0);
         }
@@ -67,16 +69,19 @@ namespace E_Commerce_MVC.Controllers
         }
 
 
-
+        [AllowAnonymous]
         [HttpGet("/Wishlist/Check/{productId}")]
         public async Task<IActionResult> Check(int productId)
         {
-            if (!User.Identity.IsAuthenticated)
-                return Json(false);
 
-            var result = await _wishlistService.IsProductInWishlistAsync(productId);
-            return Json(result);
+            if (!User.Identity?.IsAuthenticated ?? true)
+                return Json(new { success = true, isInWishlist = false });
+
+            bool isInWishlist = await _wishlistService.IsProductInWishlistAsync(productId);
+            return Json(new { success = true, isInWishlist });
         }
+
+
 
         [HttpPost("/Wishlist/Toggle/{productId}")]
         public async Task<IActionResult> Toggle(int productId)
