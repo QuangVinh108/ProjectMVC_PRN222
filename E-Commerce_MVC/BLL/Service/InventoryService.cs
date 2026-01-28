@@ -274,19 +274,37 @@ namespace BLL.Service
         }
 
 
-        public async Task DeductInventoryAsync(int orderId)
+        public async Task<GenericResult<bool>> DeductInventoryAsync(int orderId)
         {
-            var items = await _orderItemRepo.GetByOrderIdAsync(orderId);
-
-
-            foreach (var item in items)
+            try
             {
-                var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
-                if (inventory == null) continue;
+                var orderItems = await _orderItemRepo.GetByOrderIdAsync(orderId);
+                if (orderItems == null || !orderItems.Any())
+                    return GenericResult<bool>.Failure("No order items");
 
+                foreach (var item in orderItems)
+                {
+                    var inventory = await _inventoryRepo.GetByProductIdAsync(item.ProductId);
+                    if (inventory == null)
+                        continue; // hoặc Failure("Inventory not found") tùy business
 
-                inventory.Quantity -= item.Quantity;
-                await _inventoryRepo.UpdateAsync(inventory);
+                    var newQty = inventory.Quantity - item.Quantity;
+                    if (newQty < 0)
+                        return GenericResult<bool>.Failure("Insufficient inventory");
+
+                    // Giống ProcessPaymentInventoryAsync: update theo productId + newQty
+                    await _inventoryRepo.UpdateQuantityAsync(item.ProductId, newQty);
+
+                    // Nếu repo của bạn không có UpdateQuantityAsync thì dùng:
+                    // inventory.Quantity = newQty;
+                    // await _inventoryRepo.UpdateAsync(inventory);
+                }
+
+                return GenericResult<bool>.Success(true);
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<bool>.Failure(ex.Message);
             }
         }
 

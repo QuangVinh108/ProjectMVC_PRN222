@@ -138,7 +138,8 @@ namespace BLL.Service
                 if (vnp_ResponseCode == "00") // Thành công
                 {
                     // Trừ kho
-                    await _inventoryService.ProcessPaymentInventoryAsync(orderId, "Paid");
+                    //await _inventoryService.ProcessPaymentInventoryAsync(orderId, "Paid");
+                    await _inventoryService.DeductInventoryAsync(orderId);
 
                     // Cập nhật trạng thái Order & Payment
                     order.Status = "Completed"; // Hardcode string

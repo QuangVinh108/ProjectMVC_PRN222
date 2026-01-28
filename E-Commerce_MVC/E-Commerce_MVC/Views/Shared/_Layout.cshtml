@@ -54,7 +54,9 @@
                             }
 
                             <li class="nav-item position-relative">
-                                <a class="nav-link position-relative" asp-controller="Wishlist" asp-action="Index">
+                                <a class="nav-link position-relative"
+                                   id="wishlistLink"
+                                   href="@Url.Action("Index","Wishlist")">
                                     Wishlist
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger ms-1"
                                           style="font-size: 0.65em; display: none;" id="wishlistBadge">
@@ -219,11 +221,57 @@
         </div>
     }
 
+    <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thông báo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Xin vui lòng đăng nhập để sử dụng Wishlist.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <a class="btn btn-primary" id="goLoginBtn" href="#">Đăng nhập</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- jQuery -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
     <!-- Bootstrap Bundle JS -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const wishlistLink = document.getElementById("wishlistLink");
+          if (!wishlistLink) return;
+
+          // Razor render true/false ra JS
+          const isAuthenticated = @((User?.Identity?.IsAuthenticated ?? false).ToString().ToLowerInvariant());
+
+
+          wishlistLink.addEventListener("click", function (e) {
+            if (isAuthenticated) return; // đã đăng nhập thì đi bình thường
+
+            e.preventDefault();
+
+            // gắn ReturnUrl để login xong quay lại đúng trang
+            const returnUrl = encodeURIComponent(wishlistLink.getAttribute("href"));
+            const loginUrl = `/Account/Login?ReturnUrl=${returnUrl}`;
+
+            const goLoginBtn = document.getElementById("goLoginBtn");
+            if (goLoginBtn) goLoginBtn.setAttribute("href", loginUrl);
+
+            bootstrap.Modal.getOrCreateInstance(
+               document.getElementById("loginRequiredModal")
+            ).show();
+          });
+        });
+    </script>
+
 
     <!-- Custom JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
@@ -253,5 +301,9 @@
             }
         }
     </script>
+
+   
+
+
 </body>
 </html>

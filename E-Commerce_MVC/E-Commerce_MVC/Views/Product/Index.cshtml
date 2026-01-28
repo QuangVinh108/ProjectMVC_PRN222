@@ -182,11 +182,31 @@
                                             }
                                         </td>
                                         <td class="text-center">
-                                            <a asp-action="Edit" asp-route-id="@item.ProductId" asp-route-parentId="@ViewBag.CurrentParentId" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                                            <form asp-action="Delete" asp-route-id="@item.ProductId" method="post" class="d-inline" onsubmit="return confirm('Xóa?')">
-                                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger wishlist-heart"
+                                                    data-product-id="@item.ProductId"
+                                                    title="Thêm vào wishlist">
+                                                <i class="bi bi-heart"></i>
+                                            </button>
+
+                                            <a asp-action="Edit"
+                                               asp-route-id="@item.ProductId"
+                                               asp-route-parentId="@ViewBag.CurrentParentId"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+
+                                            <form asp-action="Delete"
+                                                  asp-route-id="@item.ProductId"
+                                                  method="post"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Xóa?')">
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
                                             </form>
                                         </td>
+
                                     </tr>
                                 }
                             </tbody>
@@ -208,6 +228,19 @@
     }
 </div>
 
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:1080;">
+    <div id="wishlistLoginToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-body">
+            Vui lòng đăng nhập để thêm vào Wishlist.
+            <div class="mt-2 pt-2 border-top">
+                <a class="btn btn-primary btn-sm" id="wishlistToastLoginBtn" href="#">Đăng nhập</a>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="toast">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <style>
     /* Hover effect for root category Cards */
     .category-card {
@@ -221,3 +254,41 @@
             border-color: var(--bs-primary) !important;
         }
 </style>
+
+@section Scripts {
+    <script>
+        const isAuthenticated = @((User?.Identity?.IsAuthenticated ?? false).ToString().ToLowerInvariant());
+
+        function showWishlistLoginToast() {
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            document.getElementById("wishlistToastLoginBtn").href = `/Account/Login?ReturnUrl=${returnUrl}`;
+
+            bootstrap.Toast.getOrCreateInstance(
+                document.getElementById("wishlistLoginToast"),
+                { delay: 4000 }
+            ).show();
+        }
+
+                document.addEventListener("click", async function (e) {
+            const btn = e.target.closest(".wishlist-heart");
+            if (!btn) return;
+
+            if (!isAuthenticated) {
+                e.preventDefault();
+                showWishlistLoginToast();
+                return;
+            }
+
+            // Nếu đã đăng nhập thì gọi API (ví dụ Toggle)
+            const productId = btn.getAttribute("data-product-id");
+            const res = await fetch(`/Wishlist/Toggle/${productId}`, { method: "POST" });
+            const data = await res.json();
+
+            // TODO: cập nhật icon theo data.isAdded
+        });
+
+
+        // Ví dụ: bạn sẽ gọi showWishlistLoginToast() khi click icon tim
+        // document.addEventListener("click", function(e) { ... })
+    </script>
+}
