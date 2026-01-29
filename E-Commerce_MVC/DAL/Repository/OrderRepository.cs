@@ -143,7 +143,101 @@ namespace DAL.Repository
                 .ToListAsync();
         }
 
+        public async Task<List<ReportResultDTO>> GetRevenueReportAsync(DateTime startDate, DateTime endDate)
+        {
+            // Bước 1: Query dữ liệu thô từ SQL (Chưa format string ở đây)
+            var rawData = await _context.Orders
+                .Where(o => o.OrderDate >= startDate &&
+                            o.OrderDate <= endDate &&
+                            o.IsActive &&
+                            // LƯU Ý: Phải có ngoặc bao quanh các điều kiện OR
+                            (o.Status == "Paid" || o.Status == "Completed" || o.Status == "Shipped"))
+                .GroupBy(o => o.OrderDate.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Value = g.Sum(x => x.TotalAmount),
+                    Count = g.Count()
+                })
+                .OrderBy(x => x.Date) // Sắp xếp theo ngày tăng dần ngay trong SQL
+                .ToListAsync(); // Thực thi câu lệnh SQL lấy dữ liệu về RAM
 
+            // Bước 2: Format dữ liệu trên RAM (Client evaluation)
+            var result = rawData.Select(x => new ReportResultDTO
+            {
+                Label = x.Date.ToString("dd/MM/yyyy"), // Format ngày tháng ở đây an toàn
+                Value = x.Value,
+                Count = x.Count
+            }).ToList();
+
+            return result;
+        }
+        public async Task<List<ReportResultDTO>> GetTopSellingProductsAsync(DateTime startDate, DateTime endDate, int top = 5)
+        {
+            // Query: Join OrderItems -> Products -> Group By Product
+            // Cách này tối ưu hơn việc lấy All Order rồi tính toán ở C#
+            var query = _context.OrderItems
+                .Include(oi => oi.Order)
+                .Include(oi => oi.Product)
+                .Where(oi => oi.Order.OrderDate >= startDate &&
+                             oi.Order.OrderDate <= endDate &&
+                             oi.Order.IsActive &&
+                             (oi.Order.Status == "Paid" || oi.Order.Status == "Completed" || oi.Order.Status == "Shipped"))
+                .GroupBy(oi => new { oi.ProductId, oi.Product.ProductName, oi.Product.Image })
+                .Select(g => new ReportResultDTO
+                {
+                    Label = g.Key.ProductName,
+                    ExtraInfo = g.Key.Image, // Lấy ảnh để hiển thị nếu cần
+                    Count = g.Sum(x => x.Quantity), // Tổng số lượng bán
+                    Value = g.Sum(x => x.Quantity * x.UnitPrice) // Tổng doanh thu từ SP này
+                })
+                .OrderByDescending(x => x.Count) // Sắp xếp theo số lượng bán giảm dần
+                .Take(top);
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<List<ReportResultDTO>> GetCategoryRevenueReportAsync(DateTime startDate, DateTime endDate)
+        {
+            // Query: OrderItems -> Product -> Category -> Group By CategoryName
+            var query = _context.OrderItems
+                .Include(oi => oi.Order)
+                .Include(oi => oi.Product)
+                    .ThenInclude(p => p.Category)
+                .Where(oi => oi.Order.OrderDate >= startDate &&
+                             oi.Order.OrderDate <= endDate &&
+                             oi.Order.IsActive &&
+                             (oi.Order.Status == "Paid" || oi.Order.Status == "Completed"))
+                .GroupBy(oi => oi.Product.Category.CategoryName)
+                .Select(g => new ReportResultDTO
+                {
+                    Label = g.Key, // Tên danh mục
+                    Count = g.Sum(x => x.Quantity), // Tổng sản phẩm thuộc danh mục này đã bán
+                    Value = g.Sum(x => x.Quantity * x.UnitPrice) // Tổng doanh thu của danh mục
+                });
+
+            return await query.OrderByDescending(x => x.Value).ToListAsync();
+        }
+
+        public async Task<List<ReportResultDTO>> GetRevenueByPaymentMethodAsync(DateTime startDate, DateTime endDate)
+        {
+            // Query: Join bảng Payments
+            var query = _context.Orders
+                .Include(o => o.Payment)
+                .Where(o => o.OrderDate >= startDate &&
+                            o.OrderDate <= endDate &&
+                            o.IsActive &&
+                            o.Payment != null) // Chỉ lấy đơn có thông tin thanh toán
+                .GroupBy(o => o.Payment.PaymentMethod)
+                .Select(g => new ReportResultDTO
+                {
+                    Label = g.Key, // COD, CreditCard, Momo...
+                    Count = g.Count(),
+                    Value = g.Sum(x => x.TotalAmount)
+                });
+
+            return await query.ToListAsync();
+        }
     }
 }
 
