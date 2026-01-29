@@ -41,7 +41,7 @@
             </div>
             <h3>Giỏ hàng trống</h3>
             <p>Hãy thêm sản phẩm vào giỏ để tiếp tục mua sắm</p>
-            <a asp-controller="Product" asp-action="Index" class="btn btn-primary btn-lg">
+            <a asp-controller="Shop" asp-action="Index" class="btn btn-primary btn-lg">
                 <i class="bi bi-bag-plus me-2"></i> Khám phá sản phẩm
             </a>
         </div>
@@ -62,17 +62,20 @@
                         <div class="cart-item">
                             <!-- Product Image -->
                             <div class="cart-item-image">
-                                @if (!string.IsNullOrEmpty(item.Image))
+                                @{
+                                    var img = item.Product?.Image;
+                                }
+
+                                @if (!string.IsNullOrEmpty(img))
                                 {
-                                    <img src="@item.Image" alt="@item.Product.ProductName" />
+                                    <img src="@Url.Content(img)" alt="@item.Product.ProductName" />
                                 }
                                 else
                                 {
-                                    <div class="no-image">
-                                        <i class="bi bi-image"></i>
-                                    </div>
+                                    <div class="no-image"><i class="bi bi-image"></i></div>
                                 }
                             </div>
+
 
                             <!-- Product Info -->
                             <div class="cart-item-info">
@@ -312,7 +315,7 @@
 
                             // ✅ KEY FIX: Recalculate total NGAY SAU KHI update thành công
                             recalcTotal();
-                            
+
                             console.log('Cart updated successfully'); // Debug log
                         } else {
                             alert(data?.error ?? 'Không thể cập nhật số lượng');
@@ -362,10 +365,10 @@
 
                 if (newQty !== currentQty) {
                     input.value = newQty;
-                    
+
                     // ✅ IMPROVED: Update UI ngay lập tức trước khi gọi server
                     recalcTotal();
-                    
+
                     // Gửi request lên server
                     sendUpdate(cartItemId, newQty, input);
                 }
@@ -381,4 +384,3 @@
     </script>
 }
 
-}

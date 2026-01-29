@@ -300,8 +300,8 @@
         }
 
         // --- 2. HÀM WISHLIST (YÊU THÍCH) ---
-               $(function() {
-            // Check trạng thái ban đầu
+        $(function() {
+            // Check trạng thái ban đầu (đỏ hay trắng) khi load trang
             $('.wishlist-toggle').each(async function() {
                 const btn = this;
                 const productId = btn.dataset.productId;
@@ -310,30 +310,19 @@
                         const data = await res.json();
                     const icon = btn.querySelector('.wishlist-icon');
 
-<<<<<<< HEAD
-                    if (isInWishlist) {
-=======
                     if (data.isInWishlist) {
->>>>>>> 3bf2f195e79f3c3e6861709d75596bc0720b523f
                         icon.classList.remove('bi-heart', 'text-white');
                         icon.classList.add('bi-heart-fill', 'text-danger');
                         btn.title = 'Xóa khỏi Wishlist';
                     } else {
-<<<<<<< HEAD
-                        icon.classList.add('bi-heart', 'text-white');
-                        btn.title = 'Thêm vào yêu thích';
-=======
                         icon.classList.remove('bi-heart-fill', 'text-danger');
                         icon.classList.add('bi-heart', 'text-white');
                         btn.title = 'Thêm vào Wishlist';
->>>>>>> 3bf2f195e79f3c3e6861709d75596bc0720b523f
                     }
-                } catch(e) {
-                    console.log('Check wishlist fail:', e);
-                }
+                } catch(e) { console.log('Check wishlist fail:', e); }
             });
 
-            // Xử lý click Toggle - CẬP NHẬT
+            // Xử lý click Toggle
             $(document.body).on('click', '.wishlist-toggle', async function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -344,7 +333,7 @@
 
                 btn.disabled = true;
 
-                // Hiệu ứng scale
+                // Hiệu ứng scale khi bấm
                 btn.style.transform = 'scale(0.9)';
                 setTimeout(() => btn.style.transform = 'scale(1)', 150);
 
@@ -352,14 +341,9 @@
                     const token = $('input[name="__RequestVerificationToken"]').val();
                     const res = await fetch(`/Wishlist/Toggle/${productId}`, {
                         method: 'POST',
-                        headers: {
-                            'RequestVerificationToken': token,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
+                        headers: { 'RequestVerificationToken': token }
                     });
 
-<<<<<<< HEAD
-=======
                      if (res.status === 401) {
                         const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
                         document.getElementById("loginToastBtn").href = `/Account/Login?ReturnUrl=${returnUrl}`;
@@ -369,27 +353,8 @@
                      }
 
                     if (!res.ok) throw new Error('Network error');
->>>>>>> 3bf2f195e79f3c3e6861709d75596bc0720b523f
                     const data = await res.json();
 
-                    // KIỂM TRA YÊU CẦU ĐĂNG NHẬP
-                    if (data.requireLogin === true || res.status === 401) {
-                        // Hiển thị toast cảnh báo
-                        const toastEl = document.getElementById('loginRequiredToast');
-                        const toast = new bootstrap.Toast(toastEl, {
-                            autohide: true,
-                            delay: 3000
-                        });
-                        toast.show();
-
-                        // Redirect sau 2 giây
-                        setTimeout(() => {
-                            window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
-                        }, 2000);
-                        return;
-                    }
-
-                    // Xử lý thành công
                     if (data.success) {
                         if (data.isAdded) {
                             // Đổi sang tim đỏ
@@ -400,30 +365,21 @@
                             // Đổi về tim trắng
                             icon.classList.remove('bi-heart-fill', 'text-danger');
                             icon.classList.add('bi-heart', 'text-white');
-                            btn.title = 'Thêm vào yêu thích';
+                            btn.title = 'Thêm vào Wishlist';
                         }
                     } else {
                         alert(data.message || 'Lỗi xử lý wishlist');
                     }
                 } catch(err) {
-                    console.error('Wishlist error:', err);
-
-                    // Hiển thị thông báo lỗi
-                    const toastEl = document.getElementById('loginRequiredToast');
-                    const toast = new bootstrap.Toast(toastEl);
-                    toast.show();
-
-                    // Redirect về trang login
-                    setTimeout(() => {
-                        window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
-                    }, 2000);
+                    console.error(err);
+                    // Nếu chưa đăng nhập (hoặc lỗi khác), có thể redirect user
+                    // window.location.href = '/Account/Login';
                 } finally {
                     btn.disabled = false;
                 }
             });
         });
     </script>
-
 }
 
 <style>

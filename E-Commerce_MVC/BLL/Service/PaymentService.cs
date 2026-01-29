@@ -142,7 +142,7 @@ namespace BLL.Service
                     await _inventoryService.DeductInventoryAsync(orderId);
 
                     // Cập nhật trạng thái Order & Payment
-                    order.Status = "Completed"; // Hardcode string
+                    order.Status = "Hoàn thành"; // Hardcode string
                     if (order.Payment != null)
                     {
                         order.Payment.Status = "Paid"; // Hardcode string

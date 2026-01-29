@@ -89,7 +89,7 @@ namespace DAL.Repository
         public async Task<decimal> GetTotalRevenueAsync()
         {
             return await _context.Orders
-                .Where(o => o.Status == "Completed")
+                .Where(o => o.Status == "Hoàn thành")
                 .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
         }
 

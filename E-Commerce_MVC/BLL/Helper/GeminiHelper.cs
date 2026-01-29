@@ -74,7 +74,7 @@ namespace BLL.Helper
             var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
             // 3. Gọi API (Sửa lại chuỗi URL cho gọn và đúng chuẩn C#)
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={_apiKey}";
 
             var response = await _httpClient.PostAsync(url, jsonContent);
 
@@ -173,7 +173,7 @@ namespace BLL.Helper
                 };
 
                 var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-                var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={_apiKey}";
 
                 // 4. Gọi API
                 var response = await _httpClient.PostAsync(url, jsonContent);
