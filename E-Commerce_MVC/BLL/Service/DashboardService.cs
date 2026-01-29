@@ -35,7 +35,7 @@ namespace BLL.Service
             // Tháng này
             var ordersThisMonth = await _orderRepo.GetOrdersThisMonthAsync();
             var revenueThisMonth = ordersThisMonth
-                .Where(o => o.Status == "Completed")
+                .Where(o => o.Status == "Hoàn thành")
                 .Sum(o => o.TotalAmount);
             var ordersCountThisMonth = ordersThisMonth.Count;
             var newUsersThisMonth = await _userRepo.GetNewUsersCountThisMonthAsync();
@@ -43,7 +43,7 @@ namespace BLL.Service
             // Tháng trước
             var ordersLastMonth = await _orderRepo.GetOrdersLastMonthAsync();
             var revenueLastMonth = ordersLastMonth
-                .Where(o => o.Status == "Completed")
+                .Where(o => o.Status == "Hoàn thành")
                 .Sum(o => o.TotalAmount);
             var ordersCountLastMonth = ordersLastMonth.Count;
             var newUsersLastMonth = await _userRepo.GetNewUsersCountLastMonthAsync();
@@ -85,7 +85,7 @@ namespace BLL.Service
             var startDate = endDate.AddDays(-days);
 
             var orders = await _orderRepo.GetOrdersByDateRangeAsync(startDate, endDate);
-            var completedOrders = orders.Where(o => o.Status == "Completed").ToList();
+            var completedOrders = orders.Where(o => o.Status == "Hoàn thành").ToList();
 
             var revenueByDay = completedOrders
                 .GroupBy(o => o.OrderDate.Date)

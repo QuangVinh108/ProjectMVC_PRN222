@@ -14,7 +14,6 @@ namespace E_Commerce_MVC.Controllers
         private readonly IRoleService _roleService;
         private readonly IWishlistService _wishlistService;
 
-        // Constructor Inject Service
         public UserController(IUserService userService, IRoleService roleService, IWishlistService wishlistService)
         {
             _userService = userService;

@@ -41,7 +41,7 @@
             </div>
             <h3>Giỏ hàng trống</h3>
             <p>Hãy thêm sản phẩm vào giỏ để tiếp tục mua sắm</p>
-            <a asp-controller="Product" asp-action="Index" class="btn btn-primary btn-lg">
+            <a asp-controller="Shop" asp-action="Index" class="btn btn-primary btn-lg">
                 <i class="bi bi-bag-plus me-2"></i> Khám phá sản phẩm
             </a>
         </div>
@@ -62,17 +62,20 @@
                         <div class="cart-item">
                             <!-- Product Image -->
                             <div class="cart-item-image">
-                                @if (!string.IsNullOrEmpty(item.Image))
+                                @{
+                                    var img = item.Product?.Image;
+                                }
+
+                                @if (!string.IsNullOrEmpty(img))
                                 {
-                                    <img src="@item.Image" alt="@item.Product.ProductName" />
+                                    <img src="@Url.Content(img)" alt="@item.Product.ProductName" />
                                 }
                                 else
                                 {
-                                    <div class="no-image">
-                                        <i class="bi bi-image"></i>
-                                    </div>
+                                    <div class="no-image"><i class="bi bi-image"></i></div>
                                 }
                             </div>
+
 
                             <!-- Product Info -->
                             <div class="cart-item-info">
@@ -198,10 +201,9 @@
 }
 
 @section Scripts {
-    @* ✅ GIỮ NGUYÊN 100% LOGIC JAVASCRIPT CŨ *@
     <script>
         (function () {
-            // small debounce helper
+            // Debounce helper
             function debounce(fn, delay) {
                 let t;
                 return function () {
@@ -211,30 +213,30 @@
                 };
             }
 
-            // Format number with thousand separators (use en-US to match server "N0" output)
+            // Format number with thousand separators
             function formatNumber(n) {
                 return (n || 0).toLocaleString('en-US');
             }
 
-            // Recalculate total from DOM (data-unitprice and quantity inputs / display)
+            // ✅ FIXED: Recalculate total và update TẤT CẢ elements
             function recalcTotal() {
                 const items = document.querySelectorAll('.cart-item');
                 let sum = 0;
 
                 items.forEach(item => {
-                    const unitTd = item.querySelector('[data-unitprice]');
-                    if (!unitTd) return;
+                    const unitElement = item.querySelector('[data-unitprice]');
+                    if (!unitElement) return;
 
-                    // parse invariant decimal from attribute
-                    const unit = parseFloat(unitTd.getAttribute('data-unitprice').replace(',', '.')) || 0;
+                    // Parse unit price from data attribute (invariant format: 12345.67)
+                    const unitPriceStr = unitElement.getAttribute('data-unitprice');
+                    const unitPrice = parseFloat(unitPriceStr) || 0;
 
+                    // Get quantity
                     const qtyInput = item.querySelector('.cart-quantity-input');
-                    let qty = 0;
-                    if (qtyInput) {
-                        qty = parseInt(qtyInput.value, 10) || 0;
-                    }
+                    const qty = qtyInput ? (parseInt(qtyInput.value, 10) || 0) : 0;
 
-                    const subtotal = unit * qty;
+                    // Calculate subtotal for this item
+                    const subtotal = unitPrice * qty;
                     sum += subtotal;
 
                     // Update item subtotal display
@@ -244,19 +246,35 @@
                     }
                 });
 
-                const totalEl = document.getElementById('cartTotal');
-                if (totalEl) {
-                    totalEl.textContent = formatNumber(sum) + ' ₫';
+                // ✅ UPDATE: Cập nhật CẢ HAI elements hiển thị tổng tiền
+                // 1. Tạm tính trong summary
+                const cartTotalEl = document.getElementById('cartTotal');
+                if (cartTotalEl) {
+                    cartTotalEl.textContent = formatNumber(sum) + '₫';
                 }
+
+                // 2. Tổng cộng cuối cùng (vì chưa tính shipping nên bằng tạm tính)
+                const totalPriceEl = document.querySelector('.summary-total .total-price');
+                if (totalPriceEl) {
+                    totalPriceEl.textContent = formatNumber(sum) + '₫';
+                }
+
+                console.log('Total recalculated:', sum); // Debug log
             }
 
+            // Get antiforgery token
             const tokenInput = document.querySelector('#afToken input[name="__RequestVerificationToken"]');
             const token = tokenInput ? tokenInput.value : null;
-            if (!token) return;
+            if (!token) {
+                console.error('Antiforgery token not found');
+                return;
+            }
 
+            // Get all quantity inputs
             const inputs = document.querySelectorAll('.cart-quantity-input');
             if (!inputs.length) return;
 
+            // ✅ IMPROVED: Send update to server
             async function sendUpdate(cartItemId, quantity, inputEl) {
                 if (!cartItemId) return;
                 if (quantity < 1) {
@@ -283,33 +301,36 @@
                     if (contentType.indexOf('application/json') !== -1) {
                         const data = await res.json();
                         if (data?.success) {
-                            // Update input value
+                            // Update input value từ server
                             if (data.quantity != null) {
                                 inputEl.value = data.quantity;
                             }
 
-                            // Update cart badge if controller returned new count
+                            // Update cart badge
                             const badge = document.getElementById('cartBadge');
                             if (badge && data.count != null) {
                                 badge.textContent = data.count;
                                 badge.style.display = (data.count > 0) ? 'block' : 'none';
                             }
 
-                            // Recalculate total on page using DOM values
+                            // ✅ KEY FIX: Recalculate total NGAY SAU KHI update thành công
                             recalcTotal();
+
+                            console.log('Cart updated successfully'); // Debug log
                         } else {
                             alert(data?.error ?? 'Không thể cập nhật số lượng');
                         }
                     } else {
-                        // Fallback: server returned HTML (non-AJAX) — reload to reflect changes
+                        // Fallback: reload page if response is HTML
                         location.reload();
                     }
                 } catch (err) {
-                    console.error(err);
+                    console.error('Update error:', err);
                     alert('Lỗi khi cập nhật giỏ hàng');
                 }
             }
 
+            // Debounced input handler
             const handler = debounce(function (e) {
                 const input = e.target;
                 const cartItemId = input.dataset.cartitemid;
@@ -317,16 +338,19 @@
                 sendUpdate(cartItemId, qty, input);
             }, 600);
 
+            // Attach input event listeners
             inputs.forEach(i => i.addEventListener('input', handler));
 
-            // ✅ THÊM: Handle + - buttons
+            // ✅ IMPROVED: Handle +/- button clicks
             document.addEventListener('click', function (e) {
                 const btn = e.target.closest('.qty-btn');
                 if (!btn) return;
 
+                e.preventDefault();
+
                 const cartItemId = btn.dataset.cartitemid;
                 const itemElement = btn.closest('.cart-item');
-                const input = itemElement.querySelector('.cart-quantity-input');
+                const input = itemElement ? itemElement.querySelector('.cart-quantity-input') : null;
 
                 if (!input) return;
 
@@ -341,14 +365,22 @@
 
                 if (newQty !== currentQty) {
                     input.value = newQty;
+
+                    // ✅ IMPROVED: Update UI ngay lập tức trước khi gọi server
+                    recalcTotal();
+
+                    // Gửi request lên server
                     sendUpdate(cartItemId, newQty, input);
                 }
             });
 
-            // Ensure total is correct on initial load
-            document.addEventListener('DOMContentLoaded', recalcTotal, false);
-            // Also run immediately in case script loaded after DOMContentLoaded
-            recalcTotal();
+            // ✅ RUN ON LOAD: Tính tổng ngay khi load trang
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', recalcTotal);
+            } else {
+                recalcTotal();
+            }
         })();
     </script>
 }
+
