@@ -9,7 +9,6 @@
         <i class="bi bi-bar-chart-line"></i> Báo cáo & Phân tích
     </h2>
 
-    <!-- Filter Section -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -30,10 +29,10 @@
                         <i class="bi bi-file-earmark-bar-graph"></i> Loại báo cáo
                     </label>
                     <select id="reportType" class="form-select">
-                        <option value="revenue">Doanh thu</option>
-                        <option value="orders">Đơn hàng</option>
-                        <option value="products">Sản phẩm</option>
-                        <option value="users">Người dùng</option>
+                        <option value="revenue">Doanh thu theo ngày</option>
+                        <option value="products">Top sản phẩm bán chạy</option>
+                        <option value="categories">Hiệu quả danh mục</option>
+                        <option value="payment_methods">Phương thức thanh toán</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
@@ -45,7 +44,25 @@
         </div>
     </div>
 
-    <!-- User Growth Chart -->
+    <div id="reportResultsSection" class="card border-0 shadow-sm mb-4" style="display:none;">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-primary">
+                <i class="bi bi-table"></i> Kết quả báo cáo
+            </h5>
+            <span id="resultCount" class="badge bg-secondary">0 dòng</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle" id="reportTable">
+                    <thead class="bg-light text-secondary">
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -61,7 +78,6 @@
         </div>
     </div>
 
-    <!-- Export Section -->
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom">
             <h5 class="mb-0 fw-bold">
@@ -69,7 +85,6 @@
             </h5>
         </div>
         <div class="card-body">
-            <p class="text-muted mb-3">Xuất dữ liệu báo cáo ra các định dạng khác nhau</p>
             <div class="btn-group" role="group">
                 <button class="btn btn-outline-success" onclick="exportToExcel()">
                     <i class="bi bi-file-earmark-excel"></i> Excel
@@ -89,13 +104,170 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <script>
-        // User Growth Chart
+        // 1. Cấu hình Format tiền tệ VND
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        };
+
+        // 2. Hàm chính: Gọi API Controller lấy dữ liệu báo cáo
+        function generateReport() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const reportType = document.getElementById('reportType').value;
+
+            // UI References
+            const resultSection = document.getElementById('reportResultsSection');
+            const tableHead = document.querySelector('#reportTable thead');
+            const tableBody = document.querySelector('#reportTable tbody');
+            const resultCount = document.getElementById('resultCount');
+
+            // Validate
+            if (!startDate || !endDate) {
+                alert('Vui lòng chọn ngày bắt đầu và kết thúc');
+                return;
+            }
+
+            // Hiển thị trạng thái Loading (Optional)
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><div class="mt-2">Đang tải dữ liệu...</div></td></tr>';
+            resultSection.style.display = 'block';
+
+            // Fetch API
+            fetch(`/Admin/GetReportData?startDate=${startDate}&endDate=${endDate}&reportType=${reportType}`)
+                .then(res => res.json())
+                .then(response => {
+                    if (response.success) {
+                        // Reset bảng
+                        tableHead.innerHTML = '';
+                        tableBody.innerHTML = '';
+
+                        // Cập nhật số dòng
+                        resultCount.innerText = `${response.data.length} dòng`;
+
+                        // Nếu không có dữ liệu
+                        if(response.data.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted fst-italic py-3">Không tìm thấy dữ liệu trong khoảng thời gian này.</td></tr>';
+                            return;
+                        }
+
+                        // Điều hướng vẽ bảng dựa trên loại báo cáo
+                        switch (reportType) {
+                            case 'revenue':
+                                renderRevenueTable(response.data, tableHead, tableBody);
+                                break;
+                            case 'products':
+                                renderProductTable(response.data, tableHead, tableBody);
+                                break;
+                            case 'categories':
+                                renderCategoryTable(response.data, tableHead, tableBody);
+                                break;
+                            case 'payment_methods':
+                                renderPaymentTable(response.data, tableHead, tableBody);
+                                break;
+                        }
+                    } else {
+                        alert(response.message || "Có lỗi xảy ra");
+                        resultSection.style.display = 'none';
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Lỗi kết nối server");
+                });
+        }
+
+        // --- CÁC HÀM RENDER BẢNG (Dùng dữ liệu DTO: label, value, count, extraInfo) ---
+
+        // A. Bảng Doanh thu
+        function renderRevenueTable(data, thead, tbody) {
+            thead.innerHTML = `
+                <tr>
+                    <th>Ngày</th>
+                    <th class="text-center">Số đơn hoàn thành</th>
+                    <th class="text-end">Doanh thu</th>
+                </tr>`;
+
+            data.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.label}</td>
+                        <td class="text-center">${item.count}</td>
+                        <td class="text-end fw-bold text-success">${formatCurrency(item.value)}</td>
+                    </tr>`;
+            });
+        }
+
+        // B. Bảng Sản phẩm (Top Sales)
+        function renderProductTable(data, thead, tbody) {
+            thead.innerHTML = `
+                <tr>
+                    <th style="width: 50px;">Hình</th>
+                    <th>Tên sản phẩm</th>
+                    <th class="text-center">Đã bán</th>
+                    <th class="text-end">Doanh thu</th>
+                </tr>`;
+
+            data.forEach(item => {
+                // extraInfo chứa link ảnh (nếu có)
+                const img = item.extraInfo
+                    ? `<img src="${item.extraInfo}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">`
+                    : `<div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center" style="width:40px;height:40px;"><i class="bi bi-image"></i></div>`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${img}</td>
+                        <td class="fw-semibold text-primary">${item.label}</td>
+                        <td class="text-center fw-bold">${item.count}</td>
+                        <td class="text-end text-success">${formatCurrency(item.value)}</td>
+                    </tr>`;
+            });
+        }
+
+        // C. Bảng Danh mục
+        function renderCategoryTable(data, thead, tbody) {
+            thead.innerHTML = `
+                <tr>
+                    <th>Tên danh mục</th>
+                    <th class="text-center">Số lượng bán</th>
+                    <th class="text-end">Đóng góp doanh thu</th>
+                </tr>`;
+
+            data.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="badge bg-info text-dark p-2">${item.label}</span></td>
+                        <td class="text-center">${item.count}</td>
+                        <td class="text-end fw-bold text-primary">${formatCurrency(item.value)}</td>
+                    </tr>`;
+            });
+        }
+
+        // D. Bảng Phương thức thanh toán
+        function renderPaymentTable(data, thead, tbody) {
+            thead.innerHTML = `
+                <tr>
+                    <th>Phương thức</th>
+                    <th class="text-center">Số giao dịch</th>
+                    <th class="text-end">Tổng giá trị</th>
+                </tr>`;
+
+            data.forEach(item => {
+                let badgeClass = item.label === 'COD' ? 'bg-secondary' : 'bg-success';
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="badge ${badgeClass}">${item.label}</span></td>
+                        <td class="text-center">${item.count}</td>
+                        <td class="text-end fw-bold">${formatCurrency(item.value)}</td>
+                    </tr>`;
+            });
+        }
+
+        // --- CÁC HÀM CŨ (Chart, Init) ---
+
         function loadUserGrowthChart() {
-            fetch('/Admin/GetUserGrowthChartData?months=6')
+             fetch('/Admin/GetUserGrowthChartData?months=6')
                 .then(res => res.json())
                 .then(data => {
                     const ctx = document.getElementById('userGrowthChart').getContext('2d');
-
                     new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -105,60 +277,31 @@
                                 data: data.data,
                                 backgroundColor: 'rgba(13, 202, 240, 0.8)',
                                 borderColor: 'rgba(13, 202, 240, 1)',
-                                borderWidth: 2,
-                                borderRadius: 8
+                                borderWidth: 1,
+                                borderRadius: 4
                             }]
                         },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    ticks: {
-                                        stepSize: 1
-                                    }
-                                }
-                            },
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
-                            }
-                        }
+                        options: { responsive: true, maintainAspectRatio: false }
                     });
-                });
-        }
-
-        function generateReport() {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            const reportType = document.getElementById('reportType').value;
-
-            if (!startDate || !endDate) {
-                alert('Vui lòng chọn ngày bắt đầu và kết thúc');
-                return;
-            }
-
-            alert(`Tạo báo cáo: ${reportType}\nTừ: ${startDate}\nĐến: ${endDate}`);
-            // TODO: Implement report generation
+                })
+                .catch(err => console.error("Lỗi tải biểu đồ:", err));
         }
 
         function exportToExcel() {
-            alert('Chức năng xuất Excel đang được phát triển');
-            // TODO: Implement Excel export
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const reportType = document.getElementById('reportType').value;
+            // Gọi API Export Action mà chúng ta đã placeholder trong Controller
+            window.location.href = `/Admin/ExportReportToExcel?startDate=${startDate}&endDate=${endDate}&reportType=${reportType}`;
         }
 
-        function exportToPDF() {
-            alert('Chức năng xuất PDF đang được phát triển');
-            // TODO: Implement PDF export
-        }
+        function exportToPDF() { alert('Chức năng xuất PDF đang phát triển'); }
 
         document.addEventListener('DOMContentLoaded', function () {
-            // Set default dates
+            // Set ngày mặc định: 30 ngày gần nhất
             const today = new Date();
             const lastMonth = new Date(today);
-            lastMonth.setMonth(lastMonth.getMonth() - 1);
+            lastMonth.setDate(lastMonth.getDate() - 30);
 
             document.getElementById('startDate').valueAsDate = lastMonth;
             document.getElementById('endDate').valueAsDate = today;

@@ -10,10 +10,11 @@ namespace E_Commerce_MVC.Controllers
     public class AdminController : Controller
     {
         private readonly IDashboardService _dashboardService;
-
-        public AdminController(IDashboardService dashboardService)
+        private readonly ILogger<AdminController> _logger;
+        public AdminController(IDashboardService dashboardService, ILogger<AdminController> logger)
         {
             _dashboardService = dashboardService;
+            _logger = logger;
         }
 
         // ✅ KIỂM TRA XEM ACTION NÀY CÓ ĐÚNG KHÔNG
@@ -118,6 +119,57 @@ namespace E_Commerce_MVC.Controllers
             catch (Exception ex)
             {
                 return Json(new { error = ex.Message });
+            }
+        }
+        // ==========================================
+        // REPORTING API (Phục vụ trang Báo cáo)
+        // ==========================================
+
+        [HttpGet]
+        public async Task<IActionResult> GetReportData(DateTime startDate, DateTime endDate, string reportType)
+        {
+            try
+            {
+                // Validate dữ liệu
+                if (startDate == DateTime.MinValue || endDate == DateTime.MinValue)
+                    return Json(new { success = false, message = "Vui lòng chọn khoảng thời gian hợp lệ." });
+
+                if (startDate > endDate)
+                    return Json(new { success = false, message = "Ngày bắt đầu không được lớn hơn ngày kết thúc." });
+
+                // Gọi Service
+                var data = await _dashboardService.GetReportDataAsync(startDate, endDate, reportType);
+
+                return Json(new { success = true, data = data, type = reportType });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi GetReportData: {Type} từ {Start} đến {End}", reportType, startDate, endDate);
+                return Json(new { success = false, message = "Đã xảy ra lỗi khi tạo báo cáo." });
+            }
+        }
+
+        // ==========================================
+        // EXPORT ACTIONS (Bổ sung cho tương lai)
+        // ==========================================
+
+        // [MỚI] Action để xuất Excel (Cần cài thêm thư viện như EPPlus hoặc ClosedXML)
+        [HttpGet]
+        public async Task<IActionResult> ExportReportToExcel(DateTime startDate, DateTime endDate, string reportType)
+        {
+            try
+            {
+                // TODO: Implement logic tạo file Excel tại đây
+                // var fileContent = await _dashboardService.ExportToExcelAsync(...);
+                // return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Report_{reportType}_{DateTime.Now.Ticks}.xlsx");
+
+                await Task.Delay(100); // Giả lập xử lý
+                return BadRequest("Tính năng đang được phát triển.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi Export Excel");
+                return BadRequest("Lỗi khi xuất file.");
             }
         }
     }

@@ -181,5 +181,31 @@ namespace BLL.Service
 
             return new UserGrowthChartDTO { Labels = labels, Data = data };
         }
+        public async Task<List<ReportResultDTO>> GetReportDataAsync(DateTime startDate, DateTime endDate, string reportType)
+        {
+            // 1. Chuẩn hóa thời gian: Lấy đến 23:59:59.999 của ngày kết thúc
+            var adjustedEndDate = endDate.Date.AddDays(1).AddTicks(-1);
+
+            // 2. Điều hướng dựa trên loại báo cáo
+            switch (reportType.ToLower())
+            {
+                case "revenue":
+                    return await _orderRepo.GetRevenueReportAsync(startDate, adjustedEndDate);
+
+                case "products":
+                    // Mặc định lấy Top 10 sản phẩm
+                    return await _orderRepo.GetTopSellingProductsAsync(startDate, adjustedEndDate, 10);
+
+                case "categories":
+                    return await _orderRepo.GetCategoryRevenueReportAsync(startDate, adjustedEndDate);
+
+                case "payment_methods":
+                    return await _orderRepo.GetRevenueByPaymentMethodAsync(startDate, adjustedEndDate);
+
+                default:
+                    // Trả về list rỗng nếu không khớp loại nào
+                    return new List<ReportResultDTO>();
+            }
+        }
     }
 }
