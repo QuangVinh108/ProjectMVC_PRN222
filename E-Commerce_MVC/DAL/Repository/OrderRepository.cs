@@ -238,6 +238,71 @@ namespace DAL.Repository
 
             return await query.ToListAsync();
         }
+        public async Task<decimal> GetCompletedRevenueThisMonthAsync()
+        {
+            var now = DateTime.Now;
+            var firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
+
+            return await _context.Orders
+                .Where(o => o.OrderDate >= firstDayOfMonth
+                         && o.OrderDate < now
+                         && o.Status == "Hoàn thành")
+                .SumAsync(o => o.TotalAmount);
+        }
+
+        public async Task<decimal> GetCompletedRevenueLastMonthAsync()
+        {
+            var now = DateTime.Now;
+            var firstDayOfLastMonth = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
+            var firstDayOfThisMonth = new DateTime(now.Year, now.Month, 1);
+
+            return await _context.Orders
+                .Where(o => o.OrderDate >= firstDayOfLastMonth
+                         && o.OrderDate < firstDayOfThisMonth
+                         && o.Status == "Hoàn thành")
+                .SumAsync(o => o.TotalAmount);
+        }
+
+        public async Task<Dictionary<DateTime, decimal>> GetDailyRevenueAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Orders
+                .Where(o => o.OrderDate >= startDate
+                         && o.OrderDate <= endDate
+                         && o.Status == "Hoàn thành")
+                .GroupBy(o => o.OrderDate.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = g.Sum(o => o.TotalAmount)
+                })
+                .OrderBy(x => x.Date)
+                .ToDictionaryAsync(x => x.Date, x => x.Revenue);
+        }
+
+        public async Task<List<TopProductDTO>> GetTopSellingProductsAsync(int top)
+        {
+            return await _context.Orders
+                .Where(o => o.IsActive)
+                .SelectMany(o => o.OrderItems)
+                .GroupBy(oi => new
+                {
+                    oi.ProductId,
+                    oi.Product.ProductName,
+                    oi.Product.Image
+                })
+                .Select(g => new TopProductDTO
+                {
+                    ProductId = g.Key.ProductId,
+                    ProductName = g.Key.ProductName,
+                    Image = g.Key.Image,
+                    TotalSold = g.Sum(oi => oi.Quantity),
+                    Revenue = g.Sum(oi => oi.Quantity * oi.UnitPrice)
+                })
+                .OrderByDescending(p => p.TotalSold)
+                .Take(top)
+                .ToListAsync();
+        }
+
     }
 }
 

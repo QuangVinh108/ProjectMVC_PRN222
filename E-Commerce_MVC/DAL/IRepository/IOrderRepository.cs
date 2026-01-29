@@ -32,11 +32,24 @@ namespace DAL.IRepository
 
         // [MỚI] 4. Thống kê theo phương thức thanh toán (COD vs Banking)
         Task<List<ReportResultDTO>> GetRevenueByPaymentMethodAsync(DateTime startDate, DateTime endDate);
+        Task<decimal> GetCompletedRevenueThisMonthAsync();
+        Task<decimal> GetCompletedRevenueLastMonthAsync();
+        Task<Dictionary<DateTime, decimal>> GetDailyRevenueAsync(DateTime startDate, DateTime endDate);
+        Task<List<TopProductDTO>> GetTopSellingProductsAsync(int top);
+
 
     }
 
 
 
+    public class TopProductDTO
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; }
+        public string Image { get; set; }
+        public int TotalSold { get; set; }  // Tổng số lượng đã bán
+        public decimal Revenue { get; set; }  // Tổng doanh thu từ sản phẩm này
+    }
 
     public class ReportResultDTO
     {

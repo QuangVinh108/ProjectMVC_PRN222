@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 namespace BLL.Service
 {
     public class DashboardService : IDashboardService
@@ -32,23 +31,19 @@ namespace BLL.Service
             var totalOrders = await _orderRepo.GetTotalOrderCountAsync();
             var totalRevenue = await _orderRepo.GetTotalRevenueAsync();
 
-            // Tháng này
-            var ordersThisMonth = await _orderRepo.GetOrdersThisMonthAsync();
-            var revenueThisMonth = ordersThisMonth
-                .Where(o => o.Status == "Completed")
-                .Sum(o => o.TotalAmount);
-            var ordersCountThisMonth = ordersThisMonth.Count;
-            var newUsersThisMonth = await _userRepo.GetNewUsersCountThisMonthAsync();
+            // ✅ Gọi trực tiếp từ Repository
+            var revenueThisMonth = await _orderRepo.GetCompletedRevenueThisMonthAsync();
+            var revenueLastMonth = await _orderRepo.GetCompletedRevenueLastMonthAsync();
 
-            // Tháng trước
+            var ordersThisMonth = await _orderRepo.GetOrdersThisMonthAsync();
             var ordersLastMonth = await _orderRepo.GetOrdersLastMonthAsync();
-            var revenueLastMonth = ordersLastMonth
-                .Where(o => o.Status == "Completed")
-                .Sum(o => o.TotalAmount);
+            var ordersCountThisMonth = ordersThisMonth.Count;
             var ordersCountLastMonth = ordersLastMonth.Count;
+
+            var newUsersThisMonth = await _userRepo.GetNewUsersCountThisMonthAsync();
             var newUsersLastMonth = await _userRepo.GetNewUsersCountLastMonthAsync();
 
-            // Tính % tăng trưởng
+            // ✅ Service chỉ tính toán business logic
             var revenueGrowth = revenueLastMonth > 0
                 ? ((double)(revenueThisMonth - revenueLastMonth) / (double)revenueLastMonth) * 100
                 : 0;
@@ -84,24 +79,19 @@ namespace BLL.Service
             var endDate = DateTime.Now.Date;
             var startDate = endDate.AddDays(-days);
 
-            var orders = await _orderRepo.GetOrdersByDateRangeAsync(startDate, endDate);
-            var completedOrders = orders.Where(o => o.Status == "Completed").ToList();
-
-            var revenueByDay = completedOrders
-                .GroupBy(o => o.OrderDate.Date)
-                .Select(g => new { Date = g.Key, Revenue = g.Sum(o => o.TotalAmount) })
-                .OrderBy(x => x.Date)
-                .ToList();
+            // ✅ Gọi Repository để lấy data
+            var revenueByDay = await _orderRepo.GetDailyRevenueAsync(startDate, endDate);
 
             var labels = new List<string>();
             var data = new List<decimal>();
 
+            // ✅ Service chỉ format dữ liệu
             for (int i = 0; i <= days; i++)
             {
                 var date = startDate.AddDays(i);
                 labels.Add(date.ToString("dd/MM"));
 
-                var dayRevenue = revenueByDay.FirstOrDefault(r => r.Date == date)?.Revenue ?? 0;
+                var dayRevenue = revenueByDay.ContainsKey(date) ? revenueByDay[date] : 0;
                 data.Add(dayRevenue);
             }
 
@@ -110,37 +100,15 @@ namespace BLL.Service
 
         public async Task<List<TopProductDTO>> GetTopProductsAsync(int top = 5)
         {
-            var allOrders = await _orderRepo.GetAllAsync();
-
-            // ✅ Sử dụng UnitPrice từ OrderItem (theo file:96)
-            var topProducts = allOrders
-                .Where(o => o.IsActive) // Chỉ lấy đơn hàng active
-                .SelectMany(o => o.OrderItems)
-                .GroupBy(oi => new
-                {
-                    oi.ProductId,
-                    oi.Product.ProductName,
-                    oi.Product.Image
-                })
-                .Select(g => new TopProductDTO
-                {
-                    ProductId = g.Key.ProductId,
-                    ProductName = g.Key.ProductName,
-                    Image = g.Key.Image,
-                    TotalSold = g.Sum(oi => oi.Quantity),
-                    Revenue = g.Sum(oi => oi.Quantity * oi.UnitPrice) // ✅ UnitPrice
-                })
-                .OrderByDescending(p => p.TotalSold)
-                .Take(top)
-                .ToList();
-
-            return topProducts;
+            // ✅ Repository xử lý toàn bộ query
+            return await _orderRepo.GetTopSellingProductsAsync(top);
         }
 
         public async Task<List<RecentOrderDTO>> GetRecentOrdersAsync(int count = 10)
         {
             var recentOrders = await _orderRepo.GetRecentOrdersAsync(count);
 
+            // ✅ Mapping DTO có thể giữ ở Service (acceptable)
             return recentOrders.Select(o => new RecentOrderDTO
             {
                 OrderId = o.OrderId,
@@ -181,19 +149,17 @@ namespace BLL.Service
 
             return new UserGrowthChartDTO { Labels = labels, Data = data };
         }
+
         public async Task<List<ReportResultDTO>> GetReportDataAsync(DateTime startDate, DateTime endDate, string reportType)
         {
-            // 1. Chuẩn hóa thời gian: Lấy đến 23:59:59.999 của ngày kết thúc
             var adjustedEndDate = endDate.Date.AddDays(1).AddTicks(-1);
 
-            // 2. Điều hướng dựa trên loại báo cáo
             switch (reportType.ToLower())
             {
                 case "revenue":
                     return await _orderRepo.GetRevenueReportAsync(startDate, adjustedEndDate);
 
                 case "products":
-                    // Mặc định lấy Top 10 sản phẩm
                     return await _orderRepo.GetTopSellingProductsAsync(startDate, adjustedEndDate, 10);
 
                 case "categories":
@@ -203,7 +169,6 @@ namespace BLL.Service
                     return await _orderRepo.GetRevenueByPaymentMethodAsync(startDate, adjustedEndDate);
 
                 default:
-                    // Trả về list rỗng nếu không khớp loại nào
                     return new List<ReportResultDTO>();
             }
         }
