@@ -1,0 +1,467 @@
+﻿@model IEnumerable<BLL.DTOs.ProductViewModel>
+
+@{
+    ViewData["Title"] = "Cửa hàng";
+
+    // HÀM HELPER: Giữ bộ lọc khi sort
+    string GetSortUrl(string sortOrder)
+    {
+        return Url.Action("Index", new
+        {
+            searchTerm = ViewBag.CurrentSearch,
+            categoryId = ViewBag.CurrentCategory,
+            minPrice = ViewBag.MinPrice,
+            maxPrice = ViewBag.MaxPrice,
+            sortOrder = sortOrder
+        });
+    }
+}
+
+<form id="csrf-token-form" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="container-fluid bg-primary bg-gradient text-white py-5 mb-5" style="--bs-bg-opacity: .9;">
+    <div class="container text-center">
+        <h1 class="display-5 fw-bold">Cửa Hàng Trực Tuyến</h1>
+        <p class="lead mb-0 opacity-75">Sản phẩm công nghệ & thời trang chính hãng - Giá tốt nhất</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row">
+
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 20px; z-index: 1;">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="fw-bold"><i class="bi bi-funnel-fill text-primary"></i> Bộ lọc</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Index" method="get">
+                        @if (ViewBag.CurrentCategory != null)
+                        {
+                            <input type="hidden" name="categoryId" value="@ViewBag.CurrentCategory" />
+                        }
+                        @if (ViewBag.CurrentSort != null)
+                        {
+                            <input type="hidden" name="sortOrder" value="@ViewBag.CurrentSort" />
+                        }
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted">TỪ KHÓA</label>
+                            <div class="input-group">
+                                <input type="text" name="searchTerm" class="form-control" placeholder="Tìm tên sản phẩm..." value="@ViewBag.CurrentSearch">
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">KHOẢNG GIÁ (VNĐ)</label>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="number" name="minPrice" class="form-control form-control-sm" placeholder="Thấp nhất" value="@ViewBag.MinPrice">
+                                <span>-</span>
+                                <input type="number" name="maxPrice" class="form-control form-control-sm" placeholder="Cao nhất" value="@ViewBag.MaxPrice">
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm w-100" type="submit">Áp dụng</button>
+                        </div>
+                    </form>
+
+                    <div class="mb-4 mt-4">
+                        <label class="form-label fw-bold small text-muted">DANH MỤC</label>
+                        <div class="list-group list-group-flush mb-2">
+                            <a href="@Url.Action("Index", new { searchTerm = ViewBag.CurrentSearch, minPrice = ViewBag.MinPrice, maxPrice = ViewBag.MaxPrice, sortOrder = ViewBag.CurrentSort })"
+                               class="list-group-item list-group-item-action border-0 px-0 py-2 fw-bold @(ViewBag.CurrentCategory == null ? "text-primary" : "text-dark")">
+                                <i class="bi bi-grid-fill me-2"></i> Tất cả sản phẩm
+                            </a>
+                        </div>
+
+                        @* LOGIC ACCORDION DANH MỤC (Giữ nguyên code cũ của bạn) *@
+                        @{
+                            var allCats = (ViewBag.Categories as IEnumerable<dynamic>)?.ToList();
+                            if (allCats != null)
+                            {
+                                var parentCats = allCats.Where(c => c.ParentId == null).ToList();
+                                <div class="accordion accordion-flush" id="categoryAccordion">
+                                    @foreach (var parent in parentCats)
+                                    {
+                                        var childCats = allCats.Where(c => c.ParentId == parent.CategoryId).ToList();
+                                        bool isActiveParent = (ViewBag.CurrentCategory == parent.CategoryId);
+                                        bool isActiveChild = childCats.Any(c => c.CategoryId == ViewBag.CurrentCategory);
+                                        bool expand = isActiveParent || isActiveChild;
+
+                                        <div class="accordion-item border-0">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button shadow-none px-0 py-2 @(expand ? "" : "collapsed") @(isActiveParent ? "text-primary fw-bold" : "text-dark bg-white")"
+                                                        type="button" data-bs-toggle="collapse" data-bs-target="#cat-@parent.CategoryId" aria-expanded="@(expand ? "true" : "false")">
+                                                    <span onclick="window.location.href='@Url.Action("Index", new { categoryId = parent.CategoryId, searchTerm = ViewBag.CurrentSearch, sortOrder = ViewBag.CurrentSort })'; event.stopPropagation();">
+                                                        @parent.CategoryName
+                                                    </span>
+                                                </button>
+                                            </h2>
+                                            <div id="cat-@parent.CategoryId" class="accordion-collapse collapse @(expand ? "show" : "")" data-bs-parent="#categoryAccordion">
+                                                <div class="accordion-body py-1 ps-3">
+                                                    <ul class="list-unstyled mb-0 border-start ps-3">
+                                                        @foreach (var child in childCats)
+                                                        {
+                                                            <li class="mb-1">
+                                                                <a href="@Url.Action("Index", new { categoryId = child.CategoryId, searchTerm = ViewBag.CurrentSearch, minPrice = ViewBag.MinPrice, maxPrice = ViewBag.MaxPrice, sortOrder = ViewBag.CurrentSort })"
+                                                                   class="text-decoration-none d-block py-1 @(ViewBag.CurrentCategory == child.CategoryId ? "text-primary fw-bold" : "text-secondary hover-primary")">
+                                                                    @child.CategoryName
+                                                                </a>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <div class="text-center mt-3 pt-3 border-top">
+                        <a href="@Url.Action("Index")" class="btn btn-sm btn-link text-decoration-none text-danger">
+                            <i class="bi bi-arrow-counterclockwise"></i> Xóa tất cả bộ lọc
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border">
+                <div>
+                    <span class="fw-bold text-dark">Hiển thị @(Model?.Count() ?? 0) sản phẩm</span>
+                    @if (!string.IsNullOrEmpty(ViewBag.CurrentSearch))
+                    {
+                        <span class="text-muted ms-1 small">(Tìm kiếm: "<strong>@ViewBag.CurrentSearch</strong>")</span>
+                    }
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-white border dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Sắp xếp: <span class="fw-bold text-primary">@(ViewBag.CurrentSort == "price_asc" ? "Giá tăng dần" : "Giá giảm dần")</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><a class="dropdown-item" href="@GetSortUrl("price_desc")">Giá giảm dần</a></li>
+                        <li><a class="dropdown-item" href="@GetSortUrl("price_asc")">Giá tăng dần</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+                    @foreach (var item in Model)
+                    {
+                        <div class="col">
+                            <div class="card h-100 border-0 shadow-hover product-card position-relative">
+
+                                <div class="position-relative overflow-hidden bg-white border-bottom rounded-top product-img-container">
+
+                                    <span class="badge bg-danger position-absolute top-0 start-0 m-3 z-2 shadow-sm">HOT</span>
+
+                                    <a asp-action="Details" asp-route-id="@item.ProductId" class="d-block w-100 h-100">
+                                        <img src="@(string.IsNullOrEmpty(item.Image) ? "https://placehold.co/400x400?text=No+Image" : item.Image)"
+                                             class="card-img-top object-fit-contain w-100 h-100 p-3 product-img"
+                                             alt="@item.ProductName">
+                                    </a>
+
+                                    <button class="position-absolute top-0 end-0 m-2 btn btn-link text-white shadow-sm rounded-circle wishlist-toggle z-index-5 p-0"
+                                            data-product-id="@item.ProductId" title="Thêm vào yêu thích"
+                                            style="width: 40px; height: 40px; background: rgba(0,0,0,0.1); backdrop-filter: blur(2px);">
+                                        <i class="bi bi-heart fs-5 wishlist-icon transition-all"></i>
+                                    </button>
+
+                                    <div class="product-actions position-absolute bottom-0 start-0 w-100 p-3 d-flex justify-content-center gap-2">
+                                        <button class="btn btn-light rounded-circle shadow-sm btn-add-cart"
+                                                title="Thêm vào giỏ"
+                                                onclick="addToCart(@item.ProductId, this)">
+                                            <i class="bi bi-cart-plus text-primary fs-5"></i>
+                                        </button>
+                                        <a asp-action="Details" asp-route-id="@item.ProductId" class="btn btn-light rounded-circle shadow-sm" title="Xem chi tiết">
+                                            <i class="bi bi-eye text-dark fs-5"></i>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="card-body d-flex flex-column p-3">
+                                    <div class="small text-muted text-uppercase mb-1 fw-bold" style="font-size: 0.75rem;">@item.CategoryName</div>
+
+                                    <h6 class="card-title fw-bold text-truncate mb-2">
+                                        <a asp-action="Details" asp-route-id="@item.ProductId" class="text-decoration-none text-dark hover-primary">
+                                            @item.ProductName
+                                        </a>
+                                    </h6>
+
+                                    <div class="mb-2 text-warning small">
+                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                                    </div>
+
+                                    <div class="mt-auto">
+                                        <span class="fw-bold text-primary fs-5">@item.Price.ToString("N0") ₫</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 bg-white rounded shadow-sm">
+                    <div class="mb-3 opacity-25"><i class="bi bi-box-seam display-1"></i></div>
+                    <h4 class="fw-bold">Không tìm thấy sản phẩm nào</h4>
+                    <p class="text-muted">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
+                    <a href="@Url.Action("Index")" class="btn btn-primary px-4 rounded-pill mt-2">
+                        <i class="bi bi-arrow-repeat"></i> Xóa bộ lọc & Tải lại
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed top-0 end-0 p-3 mt-5" style="z-index: 9999">
+    <div id="cartToast" class="toast align-items-center text-white bg-success border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fs-6 fw-bold">
+                <i class="bi bi-check-circle-fill me-2"></i> Đã thêm vào giỏ hàng!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+
+    <div id="loginToast" class="toast align-items-center text-bg-warning border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                Vui lòng đăng nhập để dùng Wishlist.
+                <a class="btn btn-sm btn-dark ms-2" id="loginToastBtn" href="#">Đăng nhập</a>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // --- 1. HÀM ADD TO CART (Giữ nguyên) ---
+        async function addToCart(productId, btnElement) {
+            const originalContent = btnElement.innerHTML;
+            btnElement.disabled = true;
+            btnElement.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status"></span>';
+
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('quantity', 1);
+
+            // Lấy token
+            const tokenInput = document.querySelector('#csrf-token-form input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+            formData.append('__RequestVerificationToken', token);
+
+            try {
+                const res = await fetch('/Cart/Add', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
+                    body: formData
+                });
+
+                if (!res.ok) throw new Error('Request failed');
+                const data = await res.json();
+
+                if (data.success) {
+                    const badge = document.getElementById('cartBadge');
+                    if (badge) {
+                        badge.textContent = data.count ?? badge.textContent;
+                        badge.style.display = (data.count ?? 0) > 0 ? 'block' : 'none';
+                    }
+                    btnElement.innerHTML = '<i class="bi bi-check-lg text-success fw-bold fs-4"></i>';
+
+                    const toastEl = document.getElementById('cartToast');
+                    const toast = new bootstrap.Toast(toastEl);
+                    toast.show();
+
+                    setTimeout(() => {
+                        btnElement.innerHTML = originalContent;
+                        btnElement.disabled = false;
+                    }, 1500);
+                } else {
+                    alert(data.error || 'Có lỗi xảy ra!');
+                    btnElement.innerHTML = originalContent;
+                    btnElement.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Lỗi kết nối! Vui lòng thử lại.');
+                btnElement.innerHTML = originalContent;
+                btnElement.disabled = false;
+            }
+        }
+
+        // --- 2. HÀM WISHLIST (YÊU THÍCH) ---
+        $(function() {
+            // Check trạng thái ban đầu (đỏ hay trắng) khi load trang
+            $('.wishlist-toggle').each(async function() {
+                const btn = this;
+                const productId = btn.dataset.productId;
+                try {
+                    const res = await fetch(`/Wishlist/Check/${productId}`);
+                        const data = await res.json();
+                    const icon = btn.querySelector('.wishlist-icon');
+
+                    if (data.isInWishlist) {
+                        icon.classList.remove('bi-heart', 'text-white');
+                        icon.classList.add('bi-heart-fill', 'text-danger');
+                        btn.title = 'Xóa khỏi Wishlist';
+                    } else {
+                        icon.classList.remove('bi-heart-fill', 'text-danger');
+                        icon.classList.add('bi-heart', 'text-white');
+                        btn.title = 'Thêm vào Wishlist';
+                    }
+                } catch(e) { console.log('Check wishlist fail:', e); }
+            });
+
+            // Xử lý click Toggle
+            $(document.body).on('click', '.wishlist-toggle', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const btn = this;
+                const icon = btn.querySelector('.wishlist-icon');
+                const productId = btn.dataset.productId;
+
+                btn.disabled = true;
+
+                // Hiệu ứng scale khi bấm
+                btn.style.transform = 'scale(0.9)';
+                setTimeout(() => btn.style.transform = 'scale(1)', 150);
+
+                try {
+                    const token = $('input[name="__RequestVerificationToken"]').val();
+                    const res = await fetch(`/Wishlist/Toggle/${productId}`, {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': token }
+                    });
+
+                     if (res.status === 401) {
+                        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                        document.getElementById("loginToastBtn").href = `/Account/Login?ReturnUrl=${returnUrl}`;
+                        bootstrap.Toast.getOrCreateInstance(document.getElementById("loginToast"),
+                        { autohide: true, delay: 3500, animation: true }).show();
+                        return;
+                     }
+
+                    if (!res.ok) throw new Error('Network error');
+                    const data = await res.json();
+
+                    if (data.success) {
+                        if (data.isAdded) {
+                            // Đổi sang tim đỏ
+                            icon.classList.remove('bi-heart', 'text-white');
+                            icon.classList.add('bi-heart-fill', 'text-danger');
+                            btn.title = 'Xóa khỏi Wishlist';
+                        } else {
+                            // Đổi về tim trắng
+                            icon.classList.remove('bi-heart-fill', 'text-danger');
+                            icon.classList.add('bi-heart', 'text-white');
+                            btn.title = 'Thêm vào Wishlist';
+                        }
+                    } else {
+                        alert(data.message || 'Lỗi xử lý wishlist');
+                    }
+                } catch(err) {
+                    console.error(err);
+                    // Nếu chưa đăng nhập (hoặc lỗi khác), có thể redirect user
+                    // window.location.href = '/Account/Login';
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    /* 1. Hiệu ứng Hover Link */
+    .hover-primary:hover {
+        color: var(--bs-primary) !important;
+        transition: color 0.2s;
+    }
+
+    /* 2. Product Card Animation */
+    .shadow-hover {
+        transition: all 0.3s ease;
+        border: 1px solid #eee !important;
+    }
+
+        .shadow-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+            border-color: transparent !important;
+        }
+
+    /* 3. Zoom ảnh khi hover */
+    .product-img {
+        transition: transform 0.4s ease;
+    }
+
+    .shadow-hover:hover .product-img {
+        transform: scale(1.08);
+    }
+
+    /* 4. Action Buttons (Trượt từ dưới lên) */
+    .product-actions {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        background: linear-gradient(to top, rgba(0,0,0,0.05), transparent);
+    }
+
+    .shadow-hover:hover .product-actions {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* 5. Style nút tròn Action */
+    .product-actions .btn {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+        .product-actions .btn:hover {
+            background-color: var(--bs-primary);
+            color: white !important;
+            border-color: var(--bs-primary);
+        }
+
+            .product-actions .btn:hover i {
+                color: white !important;
+            }
+
+    /* 6. Cố định khung ảnh (QUAN TRỌNG) */
+    .product-img-container {
+        height: 280px;
+        width: 100%;
+        background-color: #fff;
+    }
+
+        .product-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+    /* 7. Nút Wishlist */
+    .wishlist-toggle:hover {
+        background: rgba(0,0,0,0.2) !important;
+    }
+
+    .transition-all {
+        transition: all 0.2s;
+    }
+</style>

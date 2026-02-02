@@ -1,0 +1,156 @@
+﻿@using BLL.DTOs.InventoryDTOs
+@model PagedResult<InventoryDto>
+@{
+	ViewData["Title"] = "Quản lý Kho hàng";
+	Layout = "_AdminLayout";
+	var search = ViewBag.Search as string ?? "";
+}
+
+<div class="row">
+	<div class="col-12">
+		<div class="d-flex justify-content-between align-items-center mb-4">
+			<h2><i class="bi bi-box-seam"></i> Quản lý Kho hàng</h2>
+			<a asp-action="Create" class="btn btn-primary">
+				<i class="bi bi-plus-lg"></i> Thêm kho mới
+			</a>
+		</div>
+
+		@if (TempData["Success"] != null)
+		{
+			<div class="alert alert-success alert-dismissible fade show" role="alert">
+				@TempData["Success"]
+				<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+			</div>
+		}
+
+		@if (TempData["Error"] != null)
+		{
+			<div class="alert alert-danger alert-dismissible fade show" role="alert">
+				@TempData["Error"]
+				<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+			</div>
+		}
+
+		<!-- Search & Filter -->
+		<form method="get" asp-action="Index" class="mb-4">
+			<div class="row g-3">
+				<div class="col-md-5">
+					<input type="text" name="search" class="form-control"
+						   placeholder="Tìm theo tên sản phẩm, kho..." value="@search" />
+				</div>
+				<div class="col-md-3">
+					<select name="pageSize" class="form-select">
+						<option value="10" selected>10 / trang</option>
+						<option value="25">25 / trang</option>
+						<option value="50">50 / trang</option>
+					</select>
+				</div>
+				<div class="col-md-4">
+					<button type="submit" class="btn btn-outline-primary w-100">
+						<i class="bi bi-search"></i> Tìm kiếm
+					</button>
+				</div>
+			</div>
+		</form>
+
+		<!-- Table -->
+		<div class="card shadow-sm">
+			<div class="card-body p-0">
+				<div class="table-responsive">
+					<table class="table table-hover mb-0">
+						<thead class="table-light">
+							<tr>
+								<th class="text-center" style="width: 80px;">Hình ảnh</th>
+								<th>Sản phẩm</th>
+								<th>Tồn kho</th>
+								<th>Kho</th>
+								<th>Cập nhật</th>
+								<th>Thao tác</th>
+							</tr>
+						</thead>
+						<tbody>
+							@if (Model.Items.Any())
+							{
+								@foreach (var item in Model.Items)
+								{
+									<tr>
+										<td class="text-center">
+											@if (!string.IsNullOrEmpty(item.ProductImage))
+											{
+												<img src="@item.ProductImage" style="width:50px;height:50px;object-fit:cover;"
+													 class="rounded border bg-white" alt="@item.ProductName" />
+											}
+											else
+											{
+												<div class="d-flex align-items-center justify-content-center rounded border bg-light"
+													 style="width:50px;height:50px;">
+													<i class="bi bi-image text-secondary"></i>
+												</div>
+											}
+										</td>
+
+										<!-- Sản phẩm - chỉ tên + ID -->
+										<td><strong>@item.ProductName</strong><br><small>ID: @item.ProductId</small></td>
+										<td>
+											<span class="badge @(item.Quantity > 0 ? "bg-success" : "bg-danger")">
+												@item.Quantity
+											</span>
+										</td>
+										<td>@(item.Warehouse ?? "Chưa khai báo")</td>
+										<td>@item.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+										<td>
+											<a asp-action="Edit" asp-route-productId="@item.ProductId"
+											   class="btn btn-sm btn-outline-primary">
+												<i class="bi bi-pencil"></i>
+											</a>
+											<form asp-action="Delete" asp-route-productId="@item.ProductId"
+												  method="post" style="display:inline;"
+												  onsubmit="return confirm('Xóa kho @item.ProductName?')">
+												<button type="submit" class="btn btn-sm btn-outline-danger">
+													<i class="bi bi-trash"></i>
+												</button>
+											</form>
+										</td>
+									</tr>
+								}
+							}
+							else
+							{
+								<tr>
+									<td colspan="5" class="text-center py-4 text-muted">
+										<i class="bi bi-inbox display-4 opacity-25 mb-3 d-block"></i>
+										Không có dữ liệu kho hàng
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- Pagination -->
+		@if (Model.TotalPages > 1)
+		{
+			<nav aria-label="Page navigation" class="mt-4">
+				<ul class="pagination justify-content-center">
+					<li class="page-item @(Model.PageIndex <= 1 ? "disabled" : "")">
+						<a class="page-link" asp-action="Index" asp-route-pageIndex="@(Model.PageIndex-1)"
+						   asp-route-search="@search">Trước</a>
+					</li>
+					@for (int i = 1; i <= Model.TotalPages; i++)
+					{
+						<li class="page-item @(i == Model.PageIndex ? "active" : "")">
+							<a class="page-link" asp-action="Index" asp-route-pageIndex="@i"
+							   asp-route-search="@search">@i</a>
+						</li>
+					}
+					<li class="page-item @(Model.PageIndex >= Model.TotalPages ? "disabled" : "")">
+						<a class="page-link" asp-action="Index" asp-route-pageIndex="@(Model.PageIndex+1)"
+						   asp-route-search="@search">Sau</a>
+					</li>
+				</ul>
+			</nav>
+		}
+	</div>
+

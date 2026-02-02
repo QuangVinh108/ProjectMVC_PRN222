@@ -1,0 +1,79 @@
+﻿@model BLL.DTOs.UpdateProfileViewModel
+
+@{
+    ViewData["Title"] = "Cập nhật thông tin";
+    // Lấy trạng thái xác thực từ Controller gửi sang
+    bool isVerified = ViewBag.IsVerified == true;
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Cập nhật thông tin</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="EditProfile" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label fw-bold"></label> <span class="text-danger">*</span>
+
+                            @if (isVerified)
+                            {
+                                <div class="input-group">
+                                    <input asp-for="FullName" class="form-control bg-light" readonly />
+                                    <span class="input-group-text bg-success text-white" title="Đã xác thực eKYC">
+                                        <i class="bi bi-shield-check"></i> Đã xác thực
+                                    </span>
+                                </div>
+                                <div class="form-text text-success">
+                                    <i class="bi bi-lock-fill"></i> Tên của bạn đã được xác thực theo CCCD và không thể thay đổi.
+                                </div>
+                            }
+                            else
+                            {
+                                <input asp-for="FullName" class="form-control" />
+                            }
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-bold"></label> <span class="text-danger">*</span>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Phone" class="form-label fw-bold"></label>
+                            <input asp-for="Phone" class="form-control" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label fw-bold"></label>
+                            <textarea asp-for="Address" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <hr class="my-4" />
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-action="Profile" class="btn btn-secondary">
+                                <i class="bi bi-x-lg"></i> Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

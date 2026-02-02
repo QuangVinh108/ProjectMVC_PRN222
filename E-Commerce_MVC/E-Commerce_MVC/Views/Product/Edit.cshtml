@@ -1,0 +1,137 @@
+﻿@model BLL.DTOs.CreateProductViewModel
+
+@{
+    ViewData["Title"] = "Cập nhật sản phẩm";
+    // 1. Lấy ID danh mục cha để biết đường quay về
+    int? returnParentId = ViewBag.ReturnParentId;
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i> Cập nhật sản phẩm</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit"
+                          asp-route-returnParentId="@returnParentId"
+                          method="post"
+                          enctype="multipart/form-data">
+
+                        <input type="hidden" asp-for="ProductId" />
+                        <input type="hidden" asp-for="Image" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tên sản phẩm <span class="text-danger">*</span></label>
+                                    <input asp-for="ProductName" class="form-control" />
+                                    <span asp-validation-for="ProductName" class="text-danger small"></span>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Mã SKU</label>
+                                        <input asp-for="Sku" class="form-control" />
+                                        <span asp-validation-for="Sku" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Giá bán (VNĐ) <span class="text-danger">*</span></label>
+                                        <input asp-for="Price" type="number" class="form-control" step="1000" asp-format="{0:0}" />
+                                        <span asp-validation-for="Price" class="text-danger small"></span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
+                                    <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.Categories">
+                                        <option value="">-- Chọn danh mục --</option>
+                                    </select>
+                                    <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Ảnh sản phẩm</label>
+
+                                    <div class="mb-2 text-center border rounded p-2" style="background-color: #f8f9fa;">
+                                        <img id="imgPreview"
+                                             src="@(string.IsNullOrEmpty(Model.Image) ? "#" : Model.Image)"
+                                             alt="Ảnh sản phẩm"
+                                             class="img-fluid rounded @(string.IsNullOrEmpty(Model.Image) ? "d-none" : "")"
+                                             style="max-height: 250px; object-fit: contain;" />
+
+                                        <p id="noImageText" class="text-muted fst-italic mt-2 @(!string.IsNullOrEmpty(Model.Image) ? "d-none" : "")">
+                                            <i class="bi bi-image"></i> Chưa có ảnh
+                                        </p>
+                                    </div>
+
+                                    <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" id="imageInput" />
+                                    <span asp-validation-for="ImageFile" class="text-danger small"></span>
+                                    <div class="form-text text-muted">Chọn ảnh mới để thay thế (jpg, png, webp...)</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Trạng thái</label>
+                                    <select asp-for="Status" class="form-select">
+                                        <option value="1">Hiển thị (Active)</option>
+                                        <option value="0">Ẩn (Inactive)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Mô tả sản phẩm</label>
+                                    <textarea asp-for="Description" class="form-control" rows="8"></textarea>
+                                    <span asp-validation-for="Description" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-action="Index"
+                               asp-route-parentId="@returnParentId"
+                               class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Hủy bỏ
+                            </a>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imgPreview = document.getElementById('imgPreview');
+        const noImageText = document.getElementById('noImageText');
+
+        imageInput.addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imgPreview.src = e.target.result;
+                    imgPreview.classList.remove('d-none');
+                    noImageText.classList.add('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+}

@@ -1,0 +1,349 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - E-Commerce</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    @* ✅ THÊM DÒNG NÀY - Render page-specific styles *@
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body>
+    <button class="scroll-top" id="scrollTop">
+        <i class="bi bi-arrow-up"></i>
+    </button>
+
+    @* Navbar chỉ hiện KHÔNG phải Login/Register *@
+    @if (ViewContext.RouteData.Values["Controller"]?.ToString() != "Account")
+    {
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+                <div class="container-fluid px-4">
+                    <a class="navbar-brand fw-bold fs-3" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-shop text-primary"></i> E-Shop
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Shop" asp-action="Index">Sản phẩm</a>
+                            </li>
+
+                            @* Orders: visible only to authenticated users *@
+                            @if (User?.Identity?.IsAuthenticated == true)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Order" asp-action="Index">
+                                        Đơn hàng
+                                    </a>
+                                </li>
+                            }
+
+                            @* ✅ WISHLIST - SỬA LẠI ĐÂY *@
+                            <li class="nav-item position-relative">
+                                <a class="nav-link position-relative"
+                                   id="wishlistLink"
+                                   href="@Url.Action("Index","Wishlist")">
+                                    Wishlist
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger ms-1"
+                                          style="font-size: 0.65em; display: none;" id="wishlistBadge">
+                                        0
+                                    </span>
+                                </a>
+                            </li>
+
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Quản lý</a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" asp-controller="User" asp-action="Index">Quản lý User</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Product" asp-action="Index">Quản lý Sản phẩm</a></li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Inventory" asp-action="Index">
+                                                <i class="bi bi-box-seam"></i> Quản lý Kho hàng
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+                        </ul>
+
+                        <!-- Login button góc phải -->
+                        <partial name="_LoginPartial" />
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+
+        <footer class="modern-footer">
+            <div class="footer-main">
+                <div class="container-fluid px-4 px-lg-5">
+                    <div class="row g-4">
+                        <!-- Company Info -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="footer-brand">
+                                <h3 class="footer-logo">
+                                    <i class="bi bi-shop"></i> E-Shop
+                                </h3>
+                                <p class="footer-description">
+                                    Nền tảng mua sắm trực tuyến hàng đầu Việt Nam.
+                                    Hàng ngàn sản phẩm chính hãng, giá tốt nhất thị trường.
+                                </p>
+                                <div class="footer-social">
+                                    <a href="#" class="social-link" title="Facebook">
+                                        <i class="bi bi-facebook"></i>
+                                    </a>
+                                    <a href="#" class="social-link" title="Instagram">
+                                        <i class="bi bi-instagram"></i>
+                                    </a>
+                                    <a href="#" class="social-link" title="Twitter">
+                                        <i class="bi bi-twitter"></i>
+                                    </a>
+                                    <a href="#" class="social-link" title="YouTube">
+                                        <i class="bi bi-youtube"></i>
+                                    </a>
+                                    <a href="#" class="social-link" title="TikTok">
+                                        <i class="bi bi-tiktok"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Links -->
+                        <div class="col-lg-2 col-md-6 col-6">
+                            <h5 class="footer-title">Mua sắm</h5>
+                            <ul class="footer-links">
+                                <li><a asp-controller="Product" asp-action="Index">Sản phẩm</a></li>
+                                <li><a asp-controller="Shop" asp-action="Index">Cửa hàng</a></li>
+                                <li><a href="#deals">Khuyến mãi</a></li>
+                                <li><a href="#bestseller">Bán chạy</a></li>
+                                <li><a href="#newproducts">Sản phẩm mới</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Customer Service -->
+                        <div class="col-lg-2 col-md-6 col-6">
+                            <h5 class="footer-title">Hỗ trợ</h5>
+                            <ul class="footer-links">
+                                <li><a href="#faq">Câu hỏi thường gặp</a></li>
+                                <li><a href="#shipping">Chính sách vận chuyển</a></li>
+                                <li><a href="#returns">Đổi trả hàng</a></li>
+                                <li><a href="#warranty">Bảo hành</a></li>
+                                <li><a href="#contact">Liên hệ</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Legal -->
+                        <div class="col-lg-2 col-md-6 col-6">
+                            <h5 class="footer-title">Chính sách</h5>
+                            <ul class="footer-links">
+                                <li><a asp-controller="Home" asp-action="Privacy">Bảo mật</a></li>
+                                <li><a href="#terms">Điều khoản dịch vụ</a></li>
+                                <li><a href="#payment">Thanh toán</a></li>
+                                <li><a href="#security">Bảo mật thông tin</a></li>
+                                <li><a href="#complaint">Giải quyết khiếu nại</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Contact & Newsletter -->
+                        <div class="col-lg-2 col-md-6 col-6">
+                            <h5 class="footer-title">Liên hệ</h5>
+                            <ul class="footer-contact">
+                                <li>
+                                    <i class="bi bi-telephone"></i>
+                                    <span>1900-xxxx</span>
+                                </li>
+                                <li>
+                                    <i class="bi bi-envelope"></i>
+                                    <span>support@eshop.vn</span>
+                                </li>
+                                <li>
+                                    <i class="bi bi-geo-alt"></i>
+                                    <span>Hà Nội, Việt Nam</span>
+                                </li>
+                                <li>
+                                    <i class="bi bi-clock"></i>
+                                    <span>24/7 hỗ trợ</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <div class="container-fluid px-4 px-lg-5">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                            <p class="footer-copyright">
+                                &copy; 2026 <strong>E-Shop</strong>. Bản quyền thuộc về E-Commerce Platform.
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-center text-md-end">
+                            <div class="footer-payments">
+                                <span class="payment-label">Thanh toán:</span>
+                                <img src="https://img.icons8.com/color/48/visa.png" alt="Visa" class="payment-icon">
+                                <img src="https://img.icons8.com/color/48/mastercard.png" alt="Mastercard" class="payment-icon">
+                                <img src="https://img.icons8.com/color/48/paypal.png" alt="PayPal" class="payment-icon">
+                                <img src="https://img.icons8.com/color/48/momo.png" alt="Momo" class="payment-icon">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        @* ✅ THÊM MODAL YÊU CẦU ĐĂNG NHẬP *@
+        <!-- Login Required Modal -->
+        <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold" id="loginRequiredModalLabel">
+                            <i class="bi bi-heart-fill text-danger"></i> Yêu cầu đăng nhập
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <div class="mb-4">
+                            <i class="bi bi-lock-fill text-primary" style="font-size: 4rem; opacity: 0.3;"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Bạn cần đăng nhập để sử dụng Wishlist</h5>
+                        <p class="text-muted mb-0">
+                            Đăng nhập để lưu sản phẩm yêu thích và quản lý danh sách của bạn dễ dàng hơn
+                        </p>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center pt-0 pb-4">
+                        <a href="/Account/Login?returnUrl=%2FWishlist" class="btn btn-primary px-4 py-2">
+                            <i class="bi bi-box-arrow-in-right"></i> Đăng nhập ngay
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">
+                            Để sau
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="container py-5">
+            @RenderBody()
+        </div>
+    }
+
+    <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thông báo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Xin vui lòng đăng nhập để sử dụng Wishlist.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <a class="btn btn-primary" id="goLoginBtn" href="#">Đăng nhập</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const wishlistLink = document.getElementById("wishlistLink");
+          if (!wishlistLink) return;
+
+          // Razor render true/false ra JS
+          const isAuthenticated = @((User?.Identity?.IsAuthenticated ?? false).ToString().ToLowerInvariant());
+
+
+          wishlistLink.addEventListener("click", function (e) {
+            if (isAuthenticated) return; // đã đăng nhập thì đi bình thường
+
+            e.preventDefault();
+
+            // gắn ReturnUrl để login xong quay lại đúng trang
+            const returnUrl = encodeURIComponent(wishlistLink.getAttribute("href"));
+            const loginUrl = `/Account/Login?ReturnUrl=${returnUrl}`;
+
+            const goLoginBtn = document.getElementById("goLoginBtn");
+            if (goLoginBtn) goLoginBtn.setAttribute("href", loginUrl);
+
+            bootstrap.Modal.getOrCreateInstance(
+               document.getElementById("loginRequiredModal")
+            ).show();
+          });
+        });
+    </script>
+
+
+    <!-- Custom JS -->
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @* ✅ Render page-specific scripts *@
+    @await RenderSectionAsync("Scripts", required: false)
+
+    @* ✅ SỬA LẠI WISHLIST COUNTER SCRIPT - CHỈ CHẠY KHI ĐÃ ĐĂNG NHẬP *@
+    <script>
+        $(document).ready(function() {
+            // Kiểm tra authentication status
+            const isAuthenticated = @Json.Serialize(User?.Identity?.IsAuthenticated ?? false);
+
+            // Chỉ update wishlist count khi đã đăng nhập
+            if (isAuthenticated) {
+                updateWishlistCount();
+                setInterval(updateWishlistCount, 30000); // Update every 30 seconds
+            }
+        });
+
+        async function updateWishlistCount() {
+            try {
+                const response = await fetch('/Wishlist/Count');
+                if (!response.ok) return; // Nếu API lỗi, bỏ qua
+
+                const count = await response.json();
+                const badge = document.getElementById('wishlistBadge');
+
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'block' : 'none';
+                }
+            } catch (e) {
+                console.log('Failed to load wishlist count:', e);
+            }
+        }
+    </script>
+
+   
+
+
+</body>
+</html>

@@ -1,0 +1,49 @@
+﻿@using BLL.DTOs.InventoryDTOs
+@model UpdateInventoryDto
+@{
+    ViewData["Title"] = "Chỉnh sửa kho hàng";
+    Layout = "_AdminLayout";
+    int productId = ViewBag.ProductId ?? 0;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h4><i class="bi bi-pencil-square"></i> Chỉnh sửa kho</h4>
+                <h5 class="mb-0">@ViewBag.ProductName</h5> 
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" asp-route-productId="@productId" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Quantity" class="form-label">Số lượng tồn</label>
+                            <input asp-for="Quantity" class="form-control" type="number" min="0" />
+                            <span asp-validation-for="Quantity" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Warehouse" class="form-label">Kho hàng</label>
+                            <input asp-for="Warehouse" class="form-control" />
+                            <span asp-validation-for="Warehouse" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Index" class="btn btn-secondary me-md-2">Hủy</a>
+                        <button type="submit" class="btn btn-warning">Cập nhật</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

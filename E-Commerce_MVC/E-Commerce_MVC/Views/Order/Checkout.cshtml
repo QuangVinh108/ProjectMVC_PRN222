@@ -1,0 +1,372 @@
+@model BLL.DTOs.CreateOrderDto
+@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+      crossorigin="" />
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Thông tin giao hàng</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label asp-for="ShippingAddress" class="form-label">Địa chỉ giao hàng <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input asp-for="ShippingAddress" id="addressInput" class="form-control" placeholder="Số nhà, tên đường..." required />
+                                <button type="button" class="btn btn-outline-primary" id="getCurrentLocationBtn">
+                                    <i class="bi bi-geo-alt-fill"></i> Lấy vị trí hiện tại
+                                </button>
+                            </div>
+                            <span asp-validation-for="ShippingAddress" class="text-danger"></span>
+                        </div>
+
+                        <!-- Google Maps -->
+                        <div class="mb-3">
+                            <label class="form-label">Chọn vị trí trên bản đồ (tùy chọn)</label>
+                            <div id="map" style="height: 400px; border-radius: 8px; border: 1px solid #ddd;"></div>
+                            <small class="text-muted">Kéo marker hoặc click vào bản đồ để chọn vị trí chính xác</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                                <select id="province" class="form-select" required>
+                                    <option value="">-- Chọn Tỉnh/TP --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phường/Xã <span class="text-danger">*</span></label>
+                                <select id="ward" class="form-select" required disabled>
+                                    <option value="">-- Chọn Phường/Xã --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Hidden field to store full address -->
+                        <input asp-for="City" type="hidden" id="cityHidden" />
+                        <input asp-for="Country" type="hidden" value="Vietnam" />
+
+                        <div class="mb-3">
+                            <label asp-for="PostalCode" class="form-label">Mã bưu điện</label>
+                            <input asp-for="PostalCode" class="form-control" placeholder="700000" />
+                            <span asp-validation-for="PostalCode" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PaymentMethod" class="form-label">Phương thức thanh toán <span class="text-danger">*</span></label>
+                            <select asp-for="PaymentMethod" class="form-select" required>
+                                <option value="COD">Thanh toán khi nhận hàng (COD)</option>
+                                <option value="BankTransfer">Chuyển khoản ngân hàng</option>
+                                <option value="CreditCard">Thẻ tín dụng</option>
+                            </select>
+                            <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Note" class="form-label">Ghi chú</label>
+                            <textarea asp-for="Note" class="form-control" rows="3" placeholder="Ghi chú cho người giao hàng..."></textarea>
+                            <span asp-validation-for="Note" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle"></i> Đặt hàng
+                            </button>
+                            <a href="/Cart" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Quay lại giỏ hàng
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Tóm tắt đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <p class="mb-0"><i class="bi bi-info-circle"></i> Thông tin chi tiết sẽ được hiển thị sau khi bạn có sản phẩm trong giỏ hàng.</p>
+                    </div>
+                    
+                    <p class="text-muted small">
+                        <i class="bi bi-shield-check"></i> Thông tin của bạn được bảo mật<br/>
+                        <i class="bi bi-truck"></i> Giao hàng toàn quốc<br/>
+                        <i class="bi bi-arrow-clockwise"></i> Đổi trả trong 7 ngày
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <script>
+        let map;
+        let marker;
+        const addressInput = document.getElementById('addressInput');
+        const getCurrentLocationBtn = document.getElementById('getCurrentLocationBtn');
+        
+        // Initialize Leaflet map
+        document.addEventListener('DOMContentLoaded', function() {
+            // Default location: Ho Chi Minh City
+            const defaultLat = 10.762622;
+            const defaultLng = 106.660172;
+            
+            // Create map
+            map = L.map('map').setView([defaultLat, defaultLng], 13);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Add draggable marker
+            marker = L.marker([defaultLat, defaultLng], {
+                draggable: true
+            }).addTo(map);
+            
+            // Geocode default location
+            reverseGeocode(defaultLat, defaultLng);
+            
+            // Event: Marker dragged
+            marker.on('dragend', function(e) {
+                const latlng = e.target.getLatLng();
+                reverseGeocode(latlng.lat, latlng.lng);
+            });
+            
+            // Event: Map clicked
+            map.on('click', function(e) {
+                marker.setLatLng(e.latlng);
+                reverseGeocode(e.latlng.lat, e.latlng.lng);
+            });
+        });
+        
+        // Reverse Geocoding: Coordinates → Address
+        function reverseGeocode(lat, lng) {
+            const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+            
+            fetch(url, {
+                headers: {
+                    'Accept-Language': 'vi' // Vietnamese language
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    // Fill address input
+                    addressInput.value = data.display_name;
+                    
+                    // Auto-populate dropdowns if address details available
+                    if (data.address) {
+                        autoPopulateDropdowns(data.address);
+                    }
+                } else {
+                    console.error('No address found');
+                }
+            })
+            .catch(error => {
+                console.error('Geocoding error:', error);
+            });
+        }
+        
+        // Auto-populate Province/Ward dropdowns (no district)
+        async function autoPopulateDropdowns(address) {
+            try {
+                // Extract location names from Nominatim response
+                const provinceName = address.province || address.city || address.state;
+                const wardName = address.suburb || address.village || address.neighbourhood;
+                
+                console.log('Detected:', { provinceName, wardName });
+                
+                // Step 1: Find and select Province
+                if (provinceName) {
+                    const provinceSelect = document.getElementById('province');
+                    const provinceOption = Array.from(provinceSelect.options).find(opt => 
+                        opt.textContent.includes(provinceName) || provinceName.includes(opt.dataset.name)
+                    );
+                    
+                    if (provinceOption) {
+                        provinceSelect.value = provinceOption.value;
+                        await onProvinceChange(); // Trigger ward loading
+                        
+                        // Step 2: Find and select Ward
+                        if (wardName) {
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for wards to load
+                            const wardSelect = document.getElementById('ward');
+                            const wardOption = Array.from(wardSelect.options).find(opt =>
+                                opt.textContent.includes(wardName) || wardName.includes(opt.dataset.name)
+                            );
+                            
+                            if (wardOption) {
+                                wardSelect.value = wardOption.value;
+                                updateCityField(); // Update hidden field
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error auto-populating dropdowns:', error);
+            }
+        }
+        
+        // Get current location
+        getCurrentLocationBtn.addEventListener('click', function() {
+            if (navigator.geolocation) {
+                getCurrentLocationBtn.disabled = true;
+                getCurrentLocationBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang lấy vị trí...';
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // Update map and marker
+                        map.setView([lat, lng], 15);
+                        marker.setLatLng([lat, lng]);
+                        
+                        // Get address
+                        reverseGeocode(lat, lng);
+                        
+                        // Reset button
+                        getCurrentLocationBtn.disabled = false;
+                        getCurrentLocationBtn.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Lấy vị trí hiện tại';
+                    },
+                    function(error) {
+                        alert('Không thể lấy vị trí: ' + error.message);
+                        getCurrentLocationBtn.disabled = false;
+                        getCurrentLocationBtn.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Lấy vị trí hiện tại';
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                alert('Trình duyệt của bạn không hỗ trợ Geolocation');
+            }
+        });
+
+        // API URLs (NEW API - 34 Tỉnh thành mới)
+        const API_BASE = 'https://esgoo.net/api-tinhthanh-new';
+        
+        // DOM Elements (Province + Ward only)
+        const provinceSelect = document.getElementById('province');
+        const wardSelect = document.getElementById('ward');
+        const cityHidden = document.getElementById('cityHidden');
+        
+        // Load Provinces on page load
+        document.addEventListener('DOMContentLoaded', loadProvinces);
+        
+        // Event listeners
+        provinceSelect.addEventListener('change', onProvinceChange);
+        wardSelect.addEventListener('change', updateCityField);
+        
+        // Load all provinces (NEW API: 4/0.htm)
+        async function loadProvinces() {
+            try {
+                const response = await fetch(`${API_BASE}/4/0.htm`);
+                const data = await response.json();
+                
+                if (data.error === 0) {
+                    provinceSelect.innerHTML = '<option value="">-- Chọn Tỉnh/TP --</option>';
+                    data.data.forEach(province => {
+                        const option = document.createElement('option');
+                        option.value = province.id;
+                        option.textContent = province.full_name;
+                        option.dataset.name = province.name;
+                        provinceSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading provinces:', error);
+                alert('Không thể tải danh sách tỉnh/thành phố');
+            }
+        }
+        
+        // When province changes, load wards directly from province data
+        async function onProvinceChange() {
+            const provinceId = provinceSelect.value;
+            
+            // Reset ward
+            wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
+            wardSelect.disabled = true;
+            
+            if (!provinceId) return;
+            
+            try {
+                // NEW API: Load full province data with wards (4/0.htm contains all data)
+                const response = await fetch(`${API_BASE}/4/0.htm`);
+                const data = await response.json();
+                
+                if (data.error === 0) {
+                    // Find selected province
+                    const selectedProvince = data.data.find(p => p.id === provinceId);
+                    
+                    if (selectedProvince && selectedProvince.data2) {
+                        // data2 contains all wards/communes for this province
+                        selectedProvince.data2.forEach(ward => {
+                            const option = document.createElement('option');
+                            option.value = ward.id;
+                            option.textContent = ward.full_name;
+                            option.dataset.name = ward.name;
+                            wardSelect.appendChild(option);
+                        });
+                        wardSelect.disabled = false;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading wards:', error);
+                alert('Không thể tải danh sách phường/xã');
+            }
+            
+            updateCityField();
+        }
+        
+        
+        // Update hidden City field with full address (Province + Ward only)
+        function updateCityField() {
+            const provinceName = provinceSelect.options[provinceSelect.selectedIndex]?.dataset.name || '';
+            const wardName = wardSelect.options[wardSelect.selectedIndex]?.dataset.name || '';
+            
+            // Build full address: "Phường X, Tỉnh Y"
+            let parts = [];
+            if (wardName) parts.push(wardName);
+            if (provinceName) parts.push(provinceName);
+            
+            cityHidden.value = parts.join(', ');
+        }
+    </script>
+}

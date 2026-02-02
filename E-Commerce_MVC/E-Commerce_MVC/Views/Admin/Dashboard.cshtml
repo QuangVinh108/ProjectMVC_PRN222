@@ -1,0 +1,1048 @@
+﻿@* Views/Admin/Dashboard.cshtml - Enhanced Version *@
+@model BLL.DTOs.DashboardStatisticsDTO
+
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "_AdminLayout";
+}
+
+<div class="dashboard-container">
+    <!-- Welcome Header with Glassmorphism -->
+    <div class="welcome-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-gradient mb-1">
+                    <i class="bi bi-speedometer2"></i> Dashboard Analytics
+                </h2>
+                <p class="text-muted mb-0">
+                    Xin chào, <strong class="text-success">@User.Identity?.Name</strong>
+                    <span class="badge bg-success-subtle text-success ms-2">
+                        <i class="bi bi-shield-check"></i> Admin
+                    </span>
+                </p>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="text-muted">
+                    <i class="bi bi-calendar3"></i> @DateTime.Now.ToString("dd/MM/yyyy")
+                </span>
+                <span class="text-muted">
+                    <i class="bi bi-clock"></i> @DateTime.Now.ToString("HH:mm")
+                </span>
+                <button class="btn btn-outline-success btn-sm" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards với Animation -->
+    <div class="row g-4 mb-4">
+        <!-- Total Revenue Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card revenue-card">
+                <div class="card-icon">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="card-content">
+                    <p class="card-label">Tổng doanh thu</p>
+                    <h3 class="card-value">@Model.TotalRevenue.ToString("N0") ₫</h3>
+                    <p class="card-subtitle">
+                        Tháng này: <strong>@Model.RevenueThisMonth.ToString("N0") ₫</strong>
+                    </p>
+                    @if (Model.RevenueGrowthPercent != 0)
+                    {
+                        <div class="growth-badge @(Model.RevenueGrowthPercent > 0 ? "positive" : "negative")">
+                            <i class="bi bi-arrow-@(Model.RevenueGrowthPercent > 0 ? "up" : "down")"></i>
+                            @Math.Abs(Model.RevenueGrowthPercent)%
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Orders Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card orders-card">
+                <div class="card-icon">
+                    <i class="bi bi-cart-check-fill"></i>
+                </div>
+                <div class="card-content">
+                    <p class="card-label">Tổng đơn hàng</p>
+                    <h3 class="card-value">@Model.TotalOrders.ToString("N0")</h3>
+                    <p class="card-subtitle">
+                        Tháng này: <strong>@Model.OrdersThisMonth</strong>
+                    </p>
+                    @if (Model.OrderGrowthPercent != 0)
+                    {
+                        <div class="growth-badge @(Model.OrderGrowthPercent > 0 ? "positive" : "negative")">
+                            <i class="bi bi-arrow-@(Model.OrderGrowthPercent > 0 ? "up" : "down")"></i>
+                            @Math.Abs(Model.OrderGrowthPercent)%
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Users Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card users-card">
+                <div class="card-icon">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="card-content">
+                    <p class="card-label">Tổng người dùng</p>
+                    <h3 class="card-value">@Model.TotalUsers.ToString("N0")</h3>
+                    <p class="card-subtitle">
+                        Mới tháng này: <strong>@Model.NewUsersThisMonth</strong>
+                    </p>
+                    @if (Model.UserGrowthPercent != 0)
+                    {
+                        <div class="growth-badge @(Model.UserGrowthPercent > 0 ? "positive" : "negative")">
+                            <i class="bi bi-arrow-@(Model.UserGrowthPercent > 0 ? "up" : "down")"></i>
+                            @Math.Abs(Model.UserGrowthPercent)%
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Products Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card products-card">
+                <div class="card-icon">
+                    <i class="bi bi-box-seam-fill"></i>
+                </div>
+                <div class="card-content">
+                    <p class="card-label">Tổng sản phẩm</p>
+                    <h3 class="card-value">@Model.TotalProducts.ToString("N0")</h3>
+                    <p class="card-subtitle">
+                        Giá trị TB: <strong>@Model.AverageOrderValue.ToString("N0") ₫</strong>
+                    </p>
+                    <a asp-controller="Product" asp-action="Index" class="card-action">
+                        Quản lý <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row với Enhanced Design -->
+    <div class="row g-4 mb-4">
+        <!-- Revenue Chart -->
+        <div class="col-xl-8">
+            <div class="modern-card chart-card">
+                <div class="card-header-modern">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title-modern">
+                                <span class="title-icon revenue-icon">
+                                    <i class="bi bi-graph-up"></i>
+                                </span>
+                                Biểu đồ doanh thu
+                            </h5>
+                            <p class="card-subtitle-modern">Theo dõi xu hướng doanh thu</p>
+                        </div>
+                        <select id="revenueDaysSelect" class="form-select-modern">
+                            <option value="7">7 ngày</option>
+                            <option value="30" selected>30 ngày</option>
+                            <option value="90">90 ngày</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body-modern">
+                    <canvas id="revenueChart" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Status Chart -->
+        <div class="col-xl-4">
+            <div class="modern-card chart-card">
+                <div class="card-header-modern">
+                    <h5 class="card-title-modern">
+                        <span class="title-icon orders-icon">
+                            <i class="bi bi-pie-chart"></i>
+                        </span>
+                        Trạng thái đơn hàng
+                    </h5>
+                    <p class="card-subtitle-modern">Phân bố theo trạng thái</p>
+                </div>
+                <div class="card-body-modern text-center">
+                    <canvas id="orderStatusChart" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Row với Enhanced Design -->
+    <div class="row g-4 mb-4">
+        <!-- Top Products -->
+        <div class="col-xl-7">
+            <div class="modern-card table-card">
+                <div class="card-header-modern">
+                    <h5 class="card-title-modern">
+                        <span class="title-icon products-icon">
+                            <i class="bi bi-trophy"></i>
+                        </span>
+                        Top sản phẩm bán chạy
+                    </h5>
+                    <p class="card-subtitle-modern">5 sản phẩm hàng đầu</p>
+                </div>
+                <div class="card-body-modern p-0">
+                    <div class="table-responsive">
+                        <table class="modern-table" id="topProductsTable">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Sản phẩm</th>
+                                    <th class="text-center">Đã bán</th>
+                                    <th class="text-end pe-4">Doanh thu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="3" class="text-center py-5">
+                                        <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                                        <p class="text-muted mb-0 mt-3">Đang tải dữ liệu...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="col-xl-5">
+            <div class="modern-card table-card">
+                <div class="card-header-modern">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title-modern">
+                                <span class="title-icon users-icon">
+                                    <i class="bi bi-clock-history"></i>
+                                </span>
+                                Đơn hàng gần đây
+                            </h5>
+                            <p class="card-subtitle-modern">10 đơn hàng mới nhất</p>
+                        </div>
+                        <a asp-controller="Order" asp-action="Index" class="btn-link-modern">
+                            Xem tất cả <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body-modern p-0">
+                    <div class="table-responsive">
+                        <table class="modern-table" id="recentOrdersTable">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Mã ĐH</th>
+                                    <th>Khách hàng</th>
+                                    <th class="text-end pe-4">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="3" class="text-center py-5">
+                                        <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                                        <p class="text-muted mb-0 mt-3">Đang tải dữ liệu...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Info Section -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="modern-card info-card">
+                <div class="card-body-modern">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="info-item">
+                                <i class="bi bi-graph-up-arrow text-success"></i>
+                                <h6>Tăng trưởng</h6>
+                                <p class="text-muted mb-0">Xu hướng tích cực</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-item">
+                                <i class="bi bi-shield-check text-primary"></i>
+                                <h6>Bảo mật</h6>
+                                <p class="text-muted mb-0">Hệ thống an toàn</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-item">
+                                <i class="bi bi-lightning-charge text-warning"></i>
+                                <h6>Hiệu suất</h6>
+                                <p class="text-muted mb-0">Tối ưu cao</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-item">
+                                <i class="bi bi-people text-info"></i>
+                                <h6>Hỗ trợ 24/7</h6>
+                                <p class="text-muted mb-0">Luôn sẵn sàng</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script>
+        // ========== REVENUE CHART with Enhanced Design ==========
+        let revenueChart;
+
+        function loadRevenueChart(days = 30) {
+            fetch(`/Admin/GetRevenueChartData?days=${days}`)
+                .then(res => res.json())
+                .then(data => {
+                    const ctx = document.getElementById('revenueChart').getContext('2d');
+
+                    if (revenueChart) {
+                        revenueChart.destroy();
+                    }
+
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+                    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.01)');
+
+                    revenueChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                label: 'Doanh thu (₫)',
+                                data: data.data,
+                                borderColor: 'rgb(16, 185, 129)',
+                                backgroundColor: gradient,
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 5,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: '#fff',
+                                pointBorderColor: 'rgb(16, 185, 129)',
+                                pointBorderWidth: 3,
+                                pointHoverBackgroundColor: 'rgb(16, 185, 129)',
+                                pointHoverBorderColor: '#fff',
+                                pointHoverBorderWidth: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    borderRadius: 8,
+                                    titleColor: '#fff',
+                                    bodyColor: '#fff',
+                                    callbacks: {
+                                        label: function (context) {
+                                            return 'Doanh thu: ' + context.parsed.y.toLocaleString('vi-VN') + ' ₫';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    border: {
+                                        display: false
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)',
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        padding: 10,
+                                        color: '#6b7280',
+                                        callback: function (value) {
+                                            return value.toLocaleString('vi-VN') + ' ₫';
+                                        }
+                                    }
+                                },
+                                x: {
+                                    border: {
+                                        display: false
+                                    },
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        padding: 10,
+                                        color: '#6b7280'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(err => console.error('Error loading revenue chart:', err));
+        }
+
+        // ========== ORDER STATUS CHART with Enhanced Design ==========
+        function loadOrderStatusChart() {
+            fetch('/Admin/GetOrderStatusChartData')
+                .then(res => res.json())
+                .then(data => {
+                    const ctx = document.getElementById('orderStatusChart').getContext('2d');
+
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                data: data.data,
+                                backgroundColor: [
+                                    'rgba(251, 191, 36, 0.9)',
+                                    'rgba(16, 185, 129, 0.9)',
+                                    'rgba(239, 68, 68, 0.9)',
+                                    'rgba(59, 130, 246, 0.9)',
+                                    'rgba(107, 114, 128, 0.9)'
+                                ],
+                                borderWidth: 0,
+                                hoverOffset: 10
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        font: {
+                                            size: 13,
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    borderRadius: 8
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(err => console.error('Error loading order status chart:', err));
+        }
+
+        // ========== TOP PRODUCTS TABLE ==========
+        function loadTopProducts() {
+            fetch('/Admin/GetTopProducts')
+                .then(res => res.json())
+                .then(products => {
+                    const tbody = document.querySelector('#topProductsTable tbody');
+                    tbody.innerHTML = '';
+
+                    if (products.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-muted">Chưa có dữ liệu</td></tr>';
+                        return;
+                    }
+
+                    products.forEach((product, index) => {
+                        const row = `
+                            <tr class="table-row-hover">
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rank-badge rank-${index + 1}">
+                                            #${index + 1}
+                                        </div>
+                                        <img src="${product.image || '/images/no-image.png'}"
+                                             alt="${product.productName}"
+                                             class="product-thumb">
+                                        <div>
+                                            <div class="product-name">${product.productName}</div>
+                                            <small class="product-id">ID: ${product.productId}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="quantity-badge">${product.totalSold}</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <span class="revenue-amount">${product.revenue.toLocaleString('vi-VN')} ₫</span>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                })
+                .catch(err => {
+                    console.error('Error loading top products:', err);
+                    const tbody = document.querySelector('#topProductsTable tbody');
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-danger">Lỗi khi tải dữ liệu</td></tr>';
+                });
+        }
+
+        // ========== RECENT ORDERS TABLE ==========
+        function loadRecentOrders() {
+            fetch('/Admin/GetRecentOrders')
+                .then(res => res.json())
+                .then(orders => {
+                    const tbody = document.querySelector('#recentOrdersTable tbody');
+                    tbody.innerHTML = '';
+
+                    if (orders.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-muted">Chưa có đơn hàng</td></tr>';
+                        return;
+                    }
+
+                    orders.forEach(order => {
+                        const statusBadge = getStatusBadge(order.status);
+                        const row = `
+                            <tr class="table-row-hover">
+                                <td class="ps-4">
+                                    <div class="order-id">#${order.orderId}</div>
+                                    <small class="order-date">${new Date(order.orderDate).toLocaleDateString('vi-VN')}</small>
+                                </td>
+                                <td>
+                                    <div class="customer-name">${order.customerName}</div>
+                                    <small class="order-amount">${order.totalAmount.toLocaleString('vi-VN')} ₫</small>
+                                </td>
+                                <td class="text-end pe-4">${statusBadge}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                })
+                .catch(err => {
+                    console.error('Error loading recent orders:', err);
+                    const tbody = document.querySelector('#recentOrdersTable tbody');
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-danger">Lỗi khi tải dữ liệu</td></tr>';
+                });
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'Pending': '<span class="status-badge status-pending">Chờ xử lý</span>',
+                'Processing': '<span class="status-badge status-processing">Đang xử lý</span>',
+                'Hoàn thành': '<span class="status-badge status-completed">Hoàn thành</span>',
+                'Cancelled': '<span class="status-badge status-cancelled">Đã hủy</span>',
+                'Shipped': '<span class="status-badge status-shipped">Đang giao</span>'
+            };
+            return badges[status] || `<span class="status-badge">${status}</span>`;
+        }
+
+        // ========== EVENT LISTENERS ==========
+        document.getElementById('revenueDaysSelect').addEventListener('change', function () {
+            loadRevenueChart(this.value);
+        });
+
+        // ========== INIT ==========
+        document.addEventListener('DOMContentLoaded', function () {
+            loadRevenueChart(30);
+            loadOrderStatusChart();
+            loadTopProducts();
+            loadRecentOrders();
+        });
+    </script>
+
+    <style>
+        /* ========== MAIN CONTAINER ========== */
+        .dashboard-container {
+            min-height: 100vh;
+            padding-bottom: 60px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecef 100%);
+        }
+
+        /* ========== WELCOME HEADER ========== */
+        .welcome-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 25px 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ========== STAT CARDS ========== */
+        .stat-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 200px;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+            }
+
+            .stat-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, var(--card-color-start), var(--card-color-end));
+            }
+
+        .revenue-card {
+            --card-color-start: #10b981;
+            --card-color-end: #059669;
+        }
+
+        .orders-card {
+            --card-color-start: #3b82f6;
+            --card-color-end: #2563eb;
+        }
+
+        .users-card {
+            --card-color-start: #8b5cf6;
+            --card-color-end: #7c3aed;
+        }
+
+        .products-card {
+            --card-color-start: #f59e0b;
+            --card-color-end: #d97706;
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--card-color-start), var(--card-color-end));
+            color: #ffffff;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: #9ca3af;
+            margin-bottom: 15px;
+        }
+
+        .growth-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+            .growth-badge.positive {
+                background: rgba(16, 185, 129, 0.1);
+                color: #059669;
+            }
+
+            .growth-badge.negative {
+                background: rgba(239, 68, 68, 0.1);
+                color: #dc2626;
+            }
+
+        .card-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--card-color-start);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: gap 0.3s;
+        }
+
+            .card-action:hover {
+                gap: 8px;
+            }
+
+        /* ========== MODERN CARDS ========== */
+        .modern-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+            .modern-card:hover {
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+            }
+
+        .card-header-modern {
+            padding: 25px 30px;
+            border-bottom: 1px solid #f3f4f6;
+            background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+        }
+
+        .card-title-modern {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #ffffff;
+        }
+
+        .revenue-icon {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .orders-icon {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .products-icon {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .users-icon {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .card-subtitle-modern {
+            font-size: 13px;
+            color: #9ca3af;
+            margin: 0;
+        }
+
+        .form-select-modern {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            width: auto;
+            transition: all 0.3s;
+        }
+
+            .form-select-modern:focus {
+                border-color: #10b981;
+                box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+            }
+
+        .card-body-modern {
+            padding: 30px;
+        }
+
+        /* ========== MODERN TABLE ========== */
+        .modern-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+            .modern-table thead th {
+                background: #f9fafb;
+                color: #6b7280;
+                font-size: 13px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                padding: 16px;
+                border-bottom: 2px solid #e5e7eb;
+            }
+
+            .modern-table tbody td {
+                padding: 20px 16px;
+                border-bottom: 1px solid #f3f4f6;
+                color: #374151;
+            }
+
+        .table-row-hover {
+            transition: background-color 0.3s;
+        }
+
+            .table-row-hover:hover {
+                background-color: #f9fafb;
+            }
+
+        /* Product Styles */
+        .rank-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            flex-shrink: 0;
+        }
+
+        .rank-1 {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .rank-2 {
+            background: linear-gradient(135deg, #94a3b8, #64748b);
+        }
+
+        .rank-3 {
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+        }
+
+        .rank-4, .rank-5 {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        .product-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid #f3f4f6;
+            flex-shrink: 0;
+        }
+
+        .product-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .product-id {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .quantity-badge {
+            display: inline-flex;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1e40af;
+        }
+
+        .revenue-amount {
+            font-size: 16px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        /* Order Styles */
+        .order-id {
+            font-size: 15px;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 4px;
+        }
+
+        .order-date {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .customer-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .order-amount {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: rgba(251, 191, 36, 0.15);
+            color: #d97706;
+        }
+
+        .status-processing {
+            background: rgba(59, 130, 246, 0.15);
+            color: #2563eb;
+        }
+
+        .status-completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+        }
+
+        .status-cancelled {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+
+        .status-shipped {
+            background: rgba(139, 92, 246, 0.15);
+            color: #7c3aed;
+        }
+
+        .btn-link-modern {
+            color: #10b981;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: gap 0.3s;
+        }
+
+            .btn-link-modern:hover {
+                gap: 8px;
+            }
+
+        /* ========== INFO CARD ========== */
+        .info-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        }
+
+        .info-item {
+            padding: 20px;
+        }
+
+            .info-item i {
+                font-size: 40px;
+                margin-bottom: 15px;
+            }
+
+            .info-item h6 {
+                font-size: 16px;
+                font-weight: 700;
+                color: #111827;
+                margin-bottom: 8px;
+            }
+
+            .info-item p {
+                font-size: 13px;
+                color: #6b7280;
+            }
+
+        /* ========== ANIMATIONS ========== */
+        @@keyframes fadeInUp {
+            from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        }
+
+        .stat-card, .modern-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+            .stat-card:nth-child(1) {
+                animation-delay: 0.1s;
+            }
+
+            .stat-card:nth-child(2) {
+                animation-delay: 0.2s;
+            }
+
+            .stat-card:nth-child(3) {
+                animation-delay: 0.3s;
+            }
+
+            .stat-card:nth-child(4) {
+                animation-delay: 0.4s;
+            }
+
+        /* ========== RESPONSIVE ========== */
+        @@media (max-width: 768px) {
+            .dashboard-container {
+            padding-bottom: 40px;
+        }
+
+        .card-value {
+            font-size: 28px;
+        }
+
+        .card-body-modern {
+            padding: 20px;
+        }
+
+        .modern-table tbody td {
+            padding: 15px 12px;
+            font-size: 14px;
+        }
+
+        }
+    </style>
+}

@@ -1,0 +1,48 @@
+﻿/* Admin-specific styles */
+.admin-body {
+    background-color: #f8f9fa;
+}
+
+.object-fit-cover {
+    object-fit: cover;
+}
+
+img[onerror] {
+    display: none; /* Ẩn ảnh lỗi */
+}
+
+
+#sidebar-wrapper {
+    min-height: 100vh;
+    transition: margin 0.25s ease-out;
+}
+
+    #sidebar-wrapper .list-group-item {
+        border: none;
+        padding: 15px 20px;
+        transition: all 0.3s;
+    }
+
+        #sidebar-wrapper .list-group-item:hover {
+            background-color: #198754 !important;
+            padding-left: 30px;
+        }
+
+        #sidebar-wrapper .list-group-item.active {
+            background-color: #198754 !important;
+        }
+
+.sidebar-heading {
+    border-bottom: 2px solid #198754;
+}
+
+/* Toggle sidebar trên mobile */
+@media (max-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: -250px;
+    }
+
+        #sidebar-wrapper.toggled {
+            margin-left: 0;
+        }
+}
